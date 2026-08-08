@@ -1,0 +1,27 @@
+# Environnement virtuel
+env/
+venv/
+.venv/
+
+# Base de données locale
+db.sqlite3
+
+# Fichiers Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Environnement
+.env
+.env.local
+
+# Fichiers système
+.DS_Store
+Thumbs.db
