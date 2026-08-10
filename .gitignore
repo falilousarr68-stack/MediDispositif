@@ -1,0 +1,30 @@
+# Environnements virtuels
+env/
+env_backup/
+env_local_backup/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Base de données locale
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Fichiers d'environnement
+.env
+.env.local
+
+# Sauvegarde locale
+medispositif_api_backup/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
