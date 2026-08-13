@@ -1,7 +1,11 @@
-from django.db.models import Q
-from rest_framework import viewsets
+from django.db.models import Q, Sum
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from authentication.permissions import EstAdministrateur
+from ventes.models import Commande, LigneCommande, StatutCommande
 
 from .models import Approvisionnement, Catalogue, DetailsApprovisionnement, ProduitMedical
 from .permissions import EstGestionnaireStock, LecturePubliqueEcritureGestionnaire
@@ -13,6 +17,7 @@ from .serializers import (
     ProduitMedicalListSerializer,
     ProduitMedicalSerializer,
 )
+from .serializers_stats import StatistiqueProduitSerializer
 
 
 class CatalogueViewSet(viewsets.ModelViewSet):
@@ -101,3 +106,61 @@ class DetailsApprovisionnementViewSet(viewsets.ModelViewSet):
         if appro_id:
             queryset = queryset.filter(approvisionnement_id=appro_id)
         return queryset
+
+
+class StatistiquesProduitsView(generics.ListAPIView):
+    """
+    Endpoint pour les statistiques de produits commandés vs stock total.
+    Réservé à l'administrateur pour le dashboard.
+    """
+
+    permission_classes = [IsAuthenticated, EstAdministrateur]
+    serializer_class = StatistiqueProduitSerializer
+
+    def get_queryset(self):
+        """Calcule les statistiques pour chaque produit."""
+        produits = ProduitMedical.objects.select_related('catalogue').all()
+
+        statistiques = []
+        for produit in produits:
+            # Calculer la quantité totale commandée pour ce produit
+            quantite_commandee = (
+                LigneCommande.objects
+                .filter(
+                    produit=produit,
+                    commande__statut=StatutCommande.VALIDEE
+                )
+                .aggregate(total=Sum('quantite'))['total'] or 0
+            )
+
+            # Stock total = stock actuel + quantité commandée (validée)
+            stock_total = produit.stock + quantite_commandee
+
+            # Calculer le pourcentage vendu
+            pourcentage_vendu = 0
+            if stock_total > 0:
+                pourcentage_vendu = (quantite_commandee / stock_total) * 100
+
+            statistiques.append({
+                'idProduit': produit.idProduit,
+                'nom': produit.nom,
+                'catalogue': produit.catalogue.nom,
+                'stock_actuel': produit.stock,
+                'quantite_commandee': quantite_commandee,
+                'stock_total': stock_total,
+                'pourcentage_vendu': round(pourcentage_vendu, 2),
+            })
+
+        return statistiques
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(
+            {
+                'message': 'Statistiques des produits récupérées avec succès.',
+                'statistiques': serializer.data,
+                'total_produits': len(queryset),
+            },
+            status=status.HTTP_200_OK,
+        )

@@ -17,11 +17,9 @@ class CatalogueSerializer(serializers.ModelSerializer):
 
 class ProduitMedicalSerializer(serializers.ModelSerializer):
     idProduit = serializers.IntegerField(source='pk', read_only=True)
-    idCatalogue = serializers.PrimaryKeyRelatedField(
-        source='catalogue',
-        queryset=Catalogue.objects.all(),
-    )
+    idCatalogue = serializers.IntegerField(write_only=True)
     nom_catalogue = serializers.CharField(source='catalogue.nom', read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = ProduitMedical
@@ -33,8 +31,34 @@ class ProduitMedicalSerializer(serializers.ModelSerializer):
             'description',
             'prix',
             'stock',
+            'image',
         ]
-        read_only_fields = ['stock']
+        # Le stock peut être défini lors de la création
+        
+    def validate_idCatalogue(self, value):
+        """Validation personnalisée pour le catalogue."""
+        if not value:
+            raise serializers.ValidationError("Le catalogue est requis.")
+        try:
+            catalogue = Catalogue.objects.get(id=value)
+            return catalogue
+        except Catalogue.DoesNotExist:
+            raise serializers.ValidationError(f"Catalogue avec ID {value} n'existe pas.")
+        except (ValueError, TypeError):
+            raise serializers.ValidationError("Le catalogue doit être un ID valide.")
+    
+    def create(self, validated_data):
+        """Override pour gérer idCatalogue manuellement."""
+        catalogue = validated_data.pop('idCatalogue')
+        validated_data['catalogue'] = catalogue
+        return super().create(validated_data)
+    
+    def update(self, instance, validated_data):
+        """Override pour gérer idCatalogue manuellement."""
+        if 'idCatalogue' in validated_data:
+            catalogue = validated_data.pop('idCatalogue')
+            validated_data['catalogue'] = catalogue
+        return super().update(instance, validated_data)
 
 
 class ProduitMedicalListSerializer(serializers.ModelSerializer):
@@ -52,6 +76,7 @@ class ProduitMedicalListSerializer(serializers.ModelSerializer):
             'prix',
             'stock',
             'nom_catalogue',
+            'image',
         ]
 
 

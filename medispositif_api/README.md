@@ -27,10 +27,10 @@ API REST pour la gestion de vente de dispositifs médicaux développée par les 
 medispositif_api/
 ├── authentication/          # Gestion des utilisateurs et authentification
 │   ├── models.py           # Modèle Utilisateur avec Enum Role
-│   ├── serializers.py      # Serializers pour inscription, login, profil
-│   ├── views.py            # ViewSets pour authentification
-│   ├── permissions.py      # Permissions personnalisées
-│   └── urls.py             # Routes d'authentification
+│   ├── serializers.py      # Serializers pour inscription, login, profil, gestion utilisateurs
+│   ├── views.py            # ViewSets pour authentification et gestion utilisateurs
+│   ├── permissions.py      # Permissions personnalisées (EstAdministrateur)
+│   └── urls.py             # Routes d'authentification et gestion utilisateurs
 │
 ├── catalogue/              # Gestion du stock et catalogue
 │   ├── models.py           # Catalogue, ProduitMedical, Approvisionnement, DetailsApprovisionnement
@@ -71,12 +71,14 @@ medispositif_api/
 ### Étapes d'installation
 
 1. **Cloner le dépôt**
+
 ```bash
 git clone https://github.com/falilousarr68-stack/MediDispositif.git
 cd MediDispositif/medispositif_api
 ```
 
 2. **Créer un environnement virtuel (recommandé)**
+
 ```bash
 python -m venv venv
 # Windows:
@@ -86,21 +88,25 @@ source venv/bin/activate
 ```
 
 3. **Installer les dépendances**
+
 ```bash
 pip install djangorestframework djangorestframework-simplejwt django-cors-headers
 ```
 
 4. **Appliquer les migrations**
+
 ```bash
 python manage.py migrate
 ```
 
 5. **Créer un superutilisateur**
+
 ```bash
 python manage.py createsuperuser
 ```
 
 6. **Lancer le serveur de développement**
+
 ```bash
 python manage.py runserver
 ```
@@ -133,18 +139,27 @@ SIMPLE_JWT = {
 
 ### Authentication (`/api/auth/`)
 
-| Méthode | Endpoint | Description | Permissions |
-|---------|----------|-------------|--------------|
-| POST | `/api/auth/register/` | Inscription d'un client | Public |
-| POST | `/api/auth/login/` | Connexion (JWT) | Public |
-| GET | `/api/auth/profile/` | Profil utilisateur | Authentifié |
+| Méthode | Endpoint                   | Description                            | Permissions           |
+| ------- | -------------------------- | -------------------------------------- | --------------------- |
+| POST    | `/api/auth/inscription/`   | Inscription d'un client               | Public                |
+| POST    | `/api/auth/connexion/`     | Connexion (JWT)                       | Public                |
+| GET     | `/api/auth/token/refresh/` | Rafraîchir le token JWT               | Authentifié           |
+| GET     | `/api/auth/profil/`        | Profil utilisateur connecté           | Authentifié           |
+| GET     | `/api/auth/utilisateurs/`  | Liste des utilisateurs (Admin)        | Administrateur        |
+| POST    | `/api/auth/utilisateurs/`  | Créer un utilisateur (Admin)          | Administrateur        |
+| GET     | `/api/auth/utilisateurs/{id}/` | Détail utilisateur (Admin)        | Administrateur        |
+| PUT     | `/api/auth/utilisateurs/{id}/` | Modifier utilisateur (Admin)      | Administrateur        |
+| PATCH   | `/api/auth/utilisateurs/{id}/` | Modification partielle (Admin)    | Administrateur        |
+| DELETE  | `/api/auth/utilisateurs/{id}/` | Supprimer utilisateur (Admin)    | Administrateur        |
 
 **Exemple d'inscription :**
+
 ```json
-POST /api/auth/register/
+POST /api/auth/inscription/
 {
   "email": "client@example.com",
-  "password": "password123",
+  "motdepasse": "password123",
+  "confirmation_motdepasse": "password123",
   "nom": "Doe",
   "prenom": "John",
   "telephone": "+221771234567",
@@ -153,15 +168,17 @@ POST /api/auth/register/
 ```
 
 **Exemple de connexion :**
+
 ```json
-POST /api/auth/login/
+POST /api/auth/connexion/
 {
   "email": "client@example.com",
-  "password": "password123"
+  "motdepasse": "password123"
 }
 ```
 
 **Réponse :**
+
 ```json
 {
   "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
@@ -176,20 +193,37 @@ POST /api/auth/login/
 }
 ```
 
+**Exemple de création d'utilisateur par l'administrateur :**
+
+```json
+POST /api/auth/utilisateurs/
+Headers: Authorization: Bearer <token_admin>
+{
+  "email": "vendeur@medispositif.sn",
+  "nom": "Fall",
+  "prenom": "Ousmane",
+  "role": "Vendeur",
+  "telephone": "771234567",
+  "motdepasse": "Vendeur1234",
+  "confirmation_motdepasse": "Vendeur1234"
+}
+```
+
 ### Catalogue (`/api/catalogue/`)
 
-| Méthode | Endpoint | Description | Permissions |
-|---------|----------|-------------|--------------|
-| GET | `/api/catalogue/catalogues/` | Liste des catalogues | Gestionnaire Stock |
-| POST | `/api/catalogue/catalogues/` | Créer un catalogue | Gestionnaire Stock |
-| GET | `/api/catalogue/produits/` | Liste des produits (avec filtres) | Public |
-| POST | `/api/catalogue/produits/` | Créer un produit | Gestionnaire Stock |
-| GET | `/api/catalogue/approvisionnements/` | Liste des approvisionnements | Gestionnaire Stock |
-| POST | `/api/catalogue/approvisionnements/` | Créer un approvisionnement | Gestionnaire Stock |
-| POST | `/api/catalogue/approvisionnements/{id}/ajouter-detail/` | Ajouter un détail | Gestionnaire Stock |
-| GET | `/api/catalogue/details-approvisionnement/` | Liste des détails | Gestionnaire Stock |
+| Méthode | Endpoint                                                 | Description                       | Permissions        |
+| ------- | -------------------------------------------------------- | --------------------------------- | ------------------ |
+| GET     | `/api/catalogue/catalogues/`                             | Liste des catalogues              | Gestionnaire Stock |
+| POST    | `/api/catalogue/catalogues/`                             | Créer un catalogue                | Gestionnaire Stock |
+| GET     | `/api/catalogue/produits/`                               | Liste des produits (avec filtres) | Public             |
+| POST    | `/api/catalogue/produits/`                               | Créer un produit                  | Gestionnaire Stock |
+| GET     | `/api/catalogue/approvisionnements/`                     | Liste des approvisionnements      | Gestionnaire Stock |
+| POST    | `/api/catalogue/approvisionnements/`                     | Créer un approvisionnement        | Gestionnaire Stock |
+| POST    | `/api/catalogue/approvisionnements/{id}/ajouter-detail/` | Ajouter un détail                 | Gestionnaire Stock |
+| GET     | `/api/catalogue/details-approvisionnement/`              | Liste des détails                 | Gestionnaire Stock |
 
 **Filtres produits :**
+
 - `?nom=xyz` : Recherche par nom
 - `?catalogue=xyz` : Filtre par catalogue
 - `?prix_min=1000` : Prix minimum
@@ -197,21 +231,22 @@ POST /api/auth/login/
 
 ### Ventes (`/api/ventes/`)
 
-| Méthode | Endpoint | Description | Permissions |
-|---------|----------|-------------|--------------|
-| GET | `/api/ventes/commandes/` | Liste des commandes | Client/Vendeur/Resp. Com. |
-| POST | `/api/ventes/commandes/` | Créer une commande | Client/Vendeur/Resp. Com. |
-| GET | `/api/ventes/commandes/{id}/` | Détail commande | Propriétaire/Vendeur/Resp. |
-| POST | `/api/ventes/commandes/{id}/valider/` | Valider une commande | Responsable Commercial |
-| POST | `/api/ventes/commandes/{id}/annuler/` | Annuler une commande | Propriétaire/Resp. Com. |
-| GET | `/api/ventes/lignes-commande/` | Liste des lignes | Propriétaire/Vendeur/Resp. |
-| POST | `/api/ventes/lignes-commande/` | Ajouter une ligne | Propriétaire/Resp. Com. |
-| GET | `/api/ventes/paiements/` | Liste des paiements | Vendeur/Resp. Com. |
-| POST | `/api/ventes/paiements/` | Enregistrer un paiement | Vendeur/Resp. Com. |
-| GET | `/api/ventes/factures/` | Liste des factures | Vendeur/Resp. Com. |
-| POST | `/api/ventes/factures/` | Générer une facture | Vendeur/Resp. Com. |
+| Méthode | Endpoint                              | Description             | Permissions                |
+| ------- | ------------------------------------- | ----------------------- | -------------------------- |
+| GET     | `/api/ventes/commandes/`              | Liste des commandes     | Client/Vendeur/Resp. Com.  |
+| POST    | `/api/ventes/commandes/`              | Créer une commande      | Client/Vendeur/Resp. Com.  |
+| GET     | `/api/ventes/commandes/{id}/`         | Détail commande         | Propriétaire/Vendeur/Resp. |
+| POST    | `/api/ventes/commandes/{id}/valider/` | Valider une commande    | Responsable Commercial     |
+| POST    | `/api/ventes/commandes/{id}/annuler/` | Annuler une commande    | Propriétaire/Resp. Com.    |
+| GET     | `/api/ventes/lignes-commande/`        | Liste des lignes        | Propriétaire/Vendeur/Resp. |
+| POST    | `/api/ventes/lignes-commande/`        | Ajouter une ligne       | Propriétaire/Resp. Com.    |
+| GET     | `/api/ventes/paiements/`              | Liste des paiements     | Vendeur/Resp. Com.         |
+| POST    | `/api/ventes/paiements/`              | Enregistrer un paiement | Vendeur/Resp. Com.         |
+| GET     | `/api/ventes/factures/`               | Liste des factures      | Vendeur/Resp. Com.         |
+| POST    | `/api/ventes/factures/`               | Générer une facture     | Vendeur/Resp. Com.         |
 
 **Exemple de création de commande :**
+
 ```json
 POST /api/ventes/commandes/
 {
@@ -231,11 +266,13 @@ POST /api/ventes/commandes/
 ```
 
 **Validation de commande :**
+
 ```json
 POST /api/ventes/commandes/{id}/valider/
 ```
 
 **Annulation de commande :**
+
 ```json
 POST /api/ventes/commandes/{id}/annuler/
 {
@@ -245,16 +282,17 @@ POST /api/ventes/commandes/{id}/annuler/
 
 ### Système (`/api/systeme/`)
 
-| Méthode | Endpoint | Description | Permissions |
-|---------|----------|-------------|--------------|
-| GET | `/api/systeme/parametres/` | Liste des paramètres | Administrateur |
-| POST | `/api/systeme/parametres/` | Créer un paramètre | Administrateur |
-| GET | `/api/systeme/parametres/par-nom/?nom=xxx` | Récupérer par nom | Administrateur |
-| GET | `/api/systeme/rapports/` | Liste des rapports | Tous authentifiés |
-| POST | `/api/systeme/rapports/` | Créer un rapport | Administrateur |
-| GET | `/api/systeme/rapports/types/` | Types de rapports | Tous authentifiés |
+| Méthode | Endpoint                                   | Description          | Permissions       |
+| ------- | ------------------------------------------ | -------------------- | ----------------- |
+| GET     | `/api/systeme/parametres/`                 | Liste des paramètres | Administrateur    |
+| POST    | `/api/systeme/parametres/`                 | Créer un paramètre   | Administrateur    |
+| GET     | `/api/systeme/parametres/par-nom/?nom=xxx` | Récupérer par nom    | Administrateur    |
+| GET     | `/api/systeme/rapports/`                   | Liste des rapports   | Tous authentifiés |
+| POST    | `/api/systeme/rapports/`                   | Créer un rapport     | Administrateur    |
+| GET     | `/api/systeme/rapports/types/`             | Types de rapports    | Tous authentifiés |
 
 **Filtres rapports :**
+
 - `?type=Ventes` : Filtre par type
 - `?date_debut=2024-01-01` : Date de début
 - `?date_fin=2024-12-31` : Date de fin
@@ -263,7 +301,7 @@ POST /api/ventes/commandes/{id}/annuler/
 
 ### Rôles disponibles
 
-1. **Administrateur** : Accès complet à tous les modules
+1. **Administrateur** : Accès complet à tous les modules, gestion des utilisateurs
 2. **Responsable Commercial** : Gestion des commandes, validation, annulation
 3. **Vendeur** : Gestion des commandes et paiements
 4. **Client** : Création de commandes, consultation de ses commandes
@@ -271,20 +309,21 @@ POST /api/ventes/commandes/{id}/annuler/
 
 ### Matrice des permissions
 
-| Action | Admin | Resp. Com. | Vendeur | Client | Gest. Stock |
-|--------|-------|------------|---------|--------|-------------|
-| Authentification | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Catalogue (lecture) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Catalogue (écriture) | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Commandes (lecture) | ✅ | ✅ | ✅ | (propres) | ❌ |
-| Commandes (création) | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Validation commande | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Annulation commande | ✅ | ✅ | ❌ | (propres) | ❌ |
-| Paiements | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Factures | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Paramètres système | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Rapports (lecture) | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Rapports (création) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Action                  | Admin | Resp. Com. | Vendeur | Client    | Gest. Stock |
+| ----------------------- | ----- | ---------- | ------- | --------- | ----------- |
+| Authentification        | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Gestion utilisateurs   | ✅    | ❌         | ❌      | ❌        | ❌          |
+| Catalogue (lecture)     | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Catalogue (écriture)    | ✅    | ❌         | ❌      | ❌        | ✅          |
+| Commandes (lecture)     | ✅    | ✅         | ✅      | (propres) | ❌          |
+| Commandes (création)   | ✅    | ✅         | ✅      | ✅        | ❌          |
+| Validation commande     | ✅    | ✅         | ❌      | ❌        | ❌          |
+| Annulation commande     | ✅    | ✅         | ❌      | (propres) | ❌          |
+| Paiements               | ✅    | ✅         | ✅      | ❌        | ❌          |
+| Factures                | ✅    | ✅         | ✅      | ❌        | ❌          |
+| Paramètres système      | ✅    | ❌         | ❌      | ❌        | ❌          |
+| Rapports (lecture)      | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Rapports (création)     | ✅    | ❌         | ❌      | ❌        | ❌          |
 
 ## 🔧 Commandes utiles
 
@@ -388,6 +427,7 @@ python manage.py test systeme
 
 - **Authentification JWT** avec tokens d'accès et de rafraîchissement
 - **Permissions granulaires** par rôle utilisateur
+- **Permission personnalisée EstAdministrateur** pour la gestion des utilisateurs
 - **CORS** configuré pour le frontend
 - **Validation des données** au niveau des serializers
 - **Protection CSRF** activée

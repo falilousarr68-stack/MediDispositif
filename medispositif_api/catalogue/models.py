@@ -39,6 +39,12 @@ class ProduitMedical(models.Model):
         verbose_name='Prix de vente',
     )
     stock = models.PositiveIntegerField(default=0, verbose_name='Stock disponible')
+    image = models.ImageField(
+        upload_to='produits/',
+        blank=True,
+        null=True,
+        verbose_name='Image du produit'
+    )
 
     class Meta:
         verbose_name = 'Produit médical'

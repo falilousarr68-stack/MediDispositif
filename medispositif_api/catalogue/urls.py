@@ -6,6 +6,7 @@ from .views import (
     CatalogueViewSet,
     DetailsApprovisionnementViewSet,
     ProduitMedicalViewSet,
+    StatistiquesProduitsView,
 )
 
 router = DefaultRouter()
@@ -18,4 +19,5 @@ app_name = 'catalogue'
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('statistiques/produits/', StatistiquesProduitsView.as_view(), name='statistiques-produits'),
 ]

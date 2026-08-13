@@ -37,19 +37,33 @@ class CommandeViewSet(viewsets.ModelViewSet):
         queryset = Commande.objects.select_related('client').prefetch_related('lignes__produit')
 
         user = self.request.user
+        print(f"User authenticated: {user.is_authenticated}")
+        print(f"User role: {user.role if user.is_authenticated else 'Anonymous'}")
+        
+        if not user.is_authenticated:
+            return queryset.none()
+        
         if user.role == Role.CLIENT:
             queryset = queryset.filter(client=user)
+            print(f"Filtering for client: {user.email}")
         elif user.role == Role.VENDEUR:
             queryset = queryset.all()
+            print("Showing all orders for Vendeur")
         elif user.role == Role.RESPONSABLE_COMMERCIAL:
             queryset = queryset.all()
+            print("Showing all orders for Responsable Commercial")
+        elif user.role == Role.ADMINISTRATEUR:
+            queryset = queryset.all()
+            print("Showing all orders for Administrateur")
         else:
             queryset = queryset.none()
+            print(f"No orders for role: {user.role}")
 
         statut = self.request.query_params.get('statut')
         if statut:
             queryset = queryset.filter(statut=statut)
 
+        print(f"Queryset count: {queryset.count()}")
         return queryset
 
     def get_serializer_class(self):
@@ -70,6 +84,8 @@ class CommandeViewSet(viewsets.ModelViewSet):
             permission_classes = [PeutValiderCommande]
         elif self.action == 'annuler':
             permission_classes = [PeutAnnulerCommande]
+        elif self.action == 'list':
+            permission_classes = [EstProprietaireOuVendeurOuResponsable]  # Admin can see all through queryset
         else:
             permission_classes = [EstProprietaireOuVendeurOuResponsable]
         return [permission() for permission in permission_classes]
