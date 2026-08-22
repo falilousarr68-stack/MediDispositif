@@ -1,4 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.conf import settings
+from smtplib import SMTPException
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -45,6 +51,59 @@ class ConnexionView(TokenObtainPairView):
     """
 
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class DemandeReinitialisationMotDePasseView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email', '').strip()
+        utilisateur = Utilisateur.objects.filter(email__iexact=email, is_active=True).first()
+        reset_url = None
+        if utilisateur:
+            uid = urlsafe_base64_encode(force_bytes(utilisateur.pk))
+            token = default_token_generator.make_token(utilisateur)
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+            reset_url = f'{frontend_url}/fr/reset-password/{uid}/{token}'
+            try:
+                send_mail(
+                    'Réinitialisation de votre mot de passe',
+                    f'Réinitialisez votre mot de passe en ouvrant ce lien : {reset_url}',
+                    None,
+                    [utilisateur.email],
+                    fail_silently=False,
+                )
+                if settings.EMAIL_BACKEND != 'django.core.mail.backends.console.EmailBackend':
+                    reset_url = None
+            except (SMTPException, OSError):
+                if not settings.DEBUG:
+                    return Response(
+                        {'error': "Le service d'envoi d'e-mails est indisponible."},
+                        status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    )
+
+        response = {'message': 'Si cette adresse existe, un lien de réinitialisation a été envoyé.'}
+        if settings.DEBUG and reset_url:
+            response['reset_url'] = reset_url
+        return Response(response)
+
+
+class ReinitialisationMotDePasseView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, uidb64, token, *args, **kwargs):
+        try:
+            utilisateur = Utilisateur.objects.get(pk=force_str(urlsafe_base64_decode(uidb64)))
+        except (Utilisateur.DoesNotExist, ValueError, TypeError, OverflowError):
+            utilisateur = None
+
+        password = request.data.get('password', '')
+        if not utilisateur or not default_token_generator.check_token(utilisateur, token) or len(password) < 6:
+            return Response({'error': 'Lien invalide ou mot de passe trop court.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        utilisateur.set_password(password)
+        utilisateur.save(update_fields=['password'])
+        return Response({'message': 'Mot de passe réinitialisé avec succès.'})
 
 
 class ProfilUtilisateurView(generics.RetrieveAPIView):

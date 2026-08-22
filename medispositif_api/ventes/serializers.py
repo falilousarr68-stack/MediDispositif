@@ -9,7 +9,96 @@ from .models import (
     ModePaiement,
     Paiement,
     StatutCommande,
+    Panier,
+    LignePanier,
 )
+
+
+class LignePanierSerializer(serializers.ModelSerializer):
+    """Serializer pour les lignes de panier."""
+
+    idProduit = serializers.PrimaryKeyRelatedField(
+        source='produit',
+        queryset=ProduitMedical.objects.all(),
+    )
+    nom_produit = serializers.CharField(source='produit.nom', read_only=True)
+    nom_catalogue = serializers.CharField(source='produit.nom_catalogue', read_only=True)
+    image = serializers.ImageField(source='produit.image', read_only=True)
+    prix_unitaire = serializers.DecimalField(
+        source='produit.prix',
+        max_digits=10,
+        decimal_places=2,
+        read_only=True,
+    )
+    stock = serializers.IntegerField(source='produit.stock', read_only=True)
+
+    class Meta:
+        model = LignePanier
+        fields = [
+            'id',
+            'idLignePanier',
+            'idProduit',
+            'nom_produit',
+            'nom_catalogue',
+            'image',
+            'quantite',
+            'prix_unitaire',
+            'montant',
+            'stock',
+        ]
+        read_only_fields = ['montant']
+
+
+class PanierSerializer(serializers.ModelSerializer):
+    """Serializer pour le panier."""
+
+    idPanier = serializers.IntegerField(source='pk', read_only=True)
+    lignes = LignePanierSerializer(many=True, read_only=True)
+    nombre_articles = serializers.SerializerMethodField()
+    montant_total = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Panier
+        fields = [
+            'idPanier',
+            'client',
+            'date_creation',
+            'date_modification',
+            'lignes',
+            'nombre_articles',
+            'montant_total',
+        ]
+        read_only_fields = ['idPanier', 'date_creation', 'date_modification']
+
+    def get_nombre_articles(self, obj):
+        """Calcule le nombre total d'articles dans le panier."""
+        return sum(ligne.quantite for ligne in obj.lignes.all())
+
+    def get_montant_total(self, obj):
+        """Calcule le montant total du panier."""
+        return sum(ligne.montant for ligne in obj.lignes.all())
+
+
+class AjouterAuPanierSerializer(serializers.Serializer):
+    """Serializer pour ajouter un produit au panier."""
+
+    idProduit = serializers.PrimaryKeyRelatedField(
+        queryset=ProduitMedical.objects.all(),
+        source='produit',
+    )
+    quantite = serializers.IntegerField(default=1, min_value=1, max_value=100)
+
+    class Meta:
+        fields = ['idProduit', 'quantite']
+
+
+class ModifierQuantitePanierSerializer(serializers.Serializer):
+    """Serializer pour modifier la quantité d'un article dans le panier."""
+
+    quantite = serializers.IntegerField(min_value=1, max_value=100)
+
+    class Meta:
+        fields = ['quantite']
 
 
 class LigneCommandeSerializer(serializers.ModelSerializer):

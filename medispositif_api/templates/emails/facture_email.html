@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Facture - MediDispositif</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .content {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .invoice-details {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .invoice-number {
+        font-size: 24px;
+        color: #667eea;
+        font-weight: bold;
+      }
+      .total {
+        font-size: 28px;
+        color: #667eea;
+        font-weight: bold;
+        text-align: right;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #666;
+        font-size: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background: #667eea;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🏥 MediDispositif</h1>
+      <p>Votre partenaire en dispositifs médicaux</p>
+    </div>
+
+    <div class="content">
+      <h2>Bonjour {{ client_nom }} {{ client_prenom }},</h2>
+      <p>
+        Nous vous remercions pour votre commande. Votre facture est maintenant
+        disponible.
+      </p>
+
+      <div class="invoice-details">
+        <div class="invoice-number">Facture #{{ numero_facture }}</div>
+        <p><strong>Date d'émission:</strong> {{ date_emission }}</p>
+        <p>
+          <strong>Montant total:</strong>
+          <span class="total">{{ montant_total }} FCFA</span>
+        </p>
+      </div>
+
+      <h3>Détails de la commande #{{ numero_commande }}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Prix unitaire</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in lignes %}
+          <tr>
+            <td>{{ ligne.nom_produit }}</td>
+            <td>{{ ligne.quantite }}</td>
+            <td>{{ ligne.prix_unitaire }} FCFA</td>
+            <td>{{ ligne.montant }} FCFA</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <p><strong>Total:</strong> {{ montant_total }} FCFA</p>
+
+      <div class="footer">
+        <p>© 2026 MediDispositif. Tous droits réservés.</p>
+        <p>Pour toute question, contactez-nous à contact@medispositif.sn</p>
+      </div>
+    </div>
+  </body>
+</html>

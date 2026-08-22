@@ -33,6 +33,16 @@ class ProduitMedicalSerializer(serializers.ModelSerializer):
             'stock',
             'image',
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation.get('image'):
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(
+                    representation['image']
+                )
+        return representation
         # Le stock peut être défini lors de la création
         
     def validate_idCatalogue(self, value):
@@ -66,6 +76,7 @@ class ProduitMedicalListSerializer(serializers.ModelSerializer):
 
     idProduit = serializers.IntegerField(source='pk', read_only=True)
     nom_catalogue = serializers.CharField(source='catalogue.nom', read_only=True)
+    image = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = ProduitMedical
@@ -78,6 +89,16 @@ class ProduitMedicalListSerializer(serializers.ModelSerializer):
             'nom_catalogue',
             'image',
         ]
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if representation.get('image'):
+            request = self.context.get('request')
+            if request:
+                representation['image'] = request.build_absolute_uri(
+                    representation['image']
+                )
+        return representation
 
 
 class DetailsApprovisionnementSerializer(serializers.ModelSerializer):

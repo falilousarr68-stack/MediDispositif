@@ -67,10 +67,16 @@ class RapportViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur administrateur au rapport."""
+        print(f"User role: {self.request.user.role}")
+        print(f"User: {self.request.user}")
+        
         if self.request.user.role != Role.ADMINISTRATEUR:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Seuls les administrateurs peuvent créer des rapports.")
+        
+        print("Saving report with generated_by user")
         serializer.save(genere_par=self.request.user)
+        print("Report saved successfully")
 
     def get_queryset(self):
         queryset = super().get_queryset()

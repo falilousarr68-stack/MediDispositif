@@ -4,6 +4,10 @@ from django.db import models
 from django.db.models import Sum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.core.validators import MinValueValidator
 
 from authentication.models import Role, Utilisateur
 from catalogue.models import ProduitMedical
@@ -24,6 +28,94 @@ class ModePaiement(models.TextChoices):
     CARTE = 'Carte', 'Carte bancaire'
     MOBILE_MONEY = 'MobileMoney', 'Mobile Money'
     CHEQUE = 'Cheque', 'Chèque'
+
+
+class Panier(models.Model):
+    """
+    Modèle de panier d'achat pour les clients.
+    Stocke les articles ajoutés au panier d'un utilisateur avant validation de commande.
+    """
+
+    client = models.ForeignKey(
+        'authentication.Utilisateur',
+        on_delete=models.CASCADE,
+        related_name='paniers',
+        verbose_name='Client',
+        limit_choices_to={'role': Role.CLIENT},
+    )
+    date_creation = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Date de création',
+    )
+    date_modification = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Date de modification',
+    )
+
+    class Meta:
+        verbose_name = 'Panier'
+        verbose_name_plural = 'Paniers'
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f'Panier de {self.client.email} - {self.date_creation.strftime("%d/%m/%Y %H:%M")}'
+
+    @property
+    def idPanier(self):
+        """Alias conforme au diagramme UML pour l'identifiant de panier."""
+        return self.pk
+
+
+class LignePanier(models.Model):
+    """
+    Ligne de panier représentant un produit et sa quantité dans un panier.
+    """
+
+    panier = models.ForeignKey(
+        Panier,
+        on_delete=models.CASCADE,
+        related_name='lignes',
+        verbose_name='Panier',
+    )
+    produit = models.ForeignKey(
+        'catalogue.ProduitMedical',
+        on_delete=models.CASCADE,
+        related_name='lignes_panier',
+        verbose_name='Produit',
+    )
+    quantite = models.PositiveIntegerField(
+        default=1,
+        verbose_name='Quantité',
+        validators=[MinValueValidator(1)],
+    )
+    date_ajout = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Date d\'ajout',
+    )
+
+    class Meta:
+        verbose_name = 'Ligne de panier'
+        verbose_name_plural = 'Lignes de panier'
+        ordering = ['-date_ajout']
+        unique_together = ['panier', 'produit']
+
+    def __str__(self):
+        return f'{self.quantite}x {self.produit.nom} dans panier {self.panier.id}'
+
+    @property
+    def idLignePanier(self):
+        """Alias conforme au diagramme UML pour l'identifiant de ligne de panier."""
+        return self.pk
+
+    @property
+    def prix_unitaire(self):
+        """Prix unitaire du produit au moment de l'ajout."""
+        return self.produit.prix
+
+    @property
+    def montant(self):
+        """Montant total de la ligne (quantité × prix unitaire)."""
+        return self.quantite * self.prix_unitaire
 
 
 class Commande(models.Model):
@@ -82,23 +174,44 @@ class Commande(models.Model):
         """
         Valide la commande et décrémente le stock des produits.
         Vérifie la disponibilité du stock avant validation.
+        Crée automatiquement un paiement et une facture.
         """
+        print(f"Validating commande #{self.pk}, statut: {self.statut}")
+        
         if self.statut != StatutCommande.EN_COURS:
             raise ValueError("Seules les commandes en cours peuvent être validées.")
 
+        print(f"Checking stock for {self.lignes.count()} lines")
         for ligne in self.lignes.all():
+            print(f"Produit: {ligne.produit.nom}, stock: {ligne.produit.stock}, demandé: {ligne.quantite}")
             if ligne.produit.stock < ligne.quantite:
                 raise ValueError(
                     f"Stock insuffisant pour {ligne.produit.nom}. "
                     f"Disponible: {ligne.produit.stock}, Demandé: {ligne.quantite}"
                 )
 
+        print("Stock verification passed, proceeding with validation")
         for ligne in self.lignes.all():
             ligne.produit.stock -= ligne.quantite
             ligne.produit.save(update_fields=['stock'])
 
         self.statut = StatutCommande.VALIDEE
         self.save(update_fields=['statut'])
+
+        print("Creating payment and invoice")
+        # Créer automatiquement un paiement par défaut (espèces)
+        Paiement.objects.create(
+            commande=self,
+            montant=self.montant_total,
+            mode_paiement=ModePaiement.ESPECES
+        )
+
+        # Créer automatiquement une facture
+        Facture.objects.create(
+            commande=self,
+            montant=self.montant_total
+        )
+        print("Validation completed successfully")
 
     def annuler_commande(self, motif):
         """
@@ -252,3 +365,44 @@ class Facture(models.Model):
         date_str = datetime.now().strftime('%Y%m%d')
         compteur = Facture.objects.filter(numero__startswith=f'FAC-{date_str}').count() + 1
         return f'FAC-{date_str}-{compteur:04d}'
+
+
+@receiver(post_save, sender=Facture)
+def envoyer_facture_par_email(sender, instance, created, **kwargs):
+    """
+    Envoie automatiquement la facture par email au client lors de sa création.
+    """
+    if created and instance.commande.client.email:
+        try:
+            context = {
+                'client_nom': instance.commande.client.nom,
+                'client_prenom': instance.commande.client.prenom,
+                'numero_facture': instance.numero,
+                'date_emission': instance.date_emission.strftime('%d/%m/%Y'),
+                'montant_total': instance.montant,
+                'numero_commande': instance.commande.pk,
+                'lignes': [
+                    {
+                        'nom_produit': ligne.produit.nom,
+                        'quantite': ligne.quantite,
+                        'prix_unitaire': ligne.prix_unitaire,
+                        'montant': ligne.montant,
+                    }
+                    for ligne in instance.commande.lignes.all()
+                ],
+            }
+            
+            html_content = render_to_string('emails/facture_email.html', context)
+            
+            send_mail(
+                subject=f'Votre facture #{instance.numero} - MediDispositif',
+                message='Votre facture est disponible en pièce jointe.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[instance.commande.client.email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            
+            print(f"Facture #{instance.numero} envoyée par email à {instance.commande.client.email}")
+        except Exception as e:
+            print(f"Erreur lors de l'envoi de l'email pour la facture #{instance.numero}: {str(e)}")

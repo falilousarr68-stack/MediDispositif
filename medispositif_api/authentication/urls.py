@@ -7,6 +7,8 @@ from .views import (
     InscriptionClientView,
     ListeUtilisateursView,
     ProfilUtilisateurView,
+    DemandeReinitialisationMotDePasseView,
+    ReinitialisationMotDePasseView,
 )
 
 app_name = 'authentication'
@@ -14,6 +16,8 @@ app_name = 'authentication'
 urlpatterns = [
     path('inscription/', InscriptionClientView.as_view(), name='inscription-client'),
     path('connexion/', ConnexionView.as_view(), name='connexion'),
+    path('mot-de-passe-oublie/', DemandeReinitialisationMotDePasseView.as_view(), name='mot-de-passe-oublie'),
+    path('reinitialiser-mot-de-passe/<uidb64>/<token>/', ReinitialisationMotDePasseView.as_view(), name='reinitialiser-mot-de-passe'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     path('profil/', ProfilUtilisateurView.as_view(), name='profil'),
     path('utilisateurs/', ListeUtilisateursView.as_view(), name='liste-utilisateurs'),

@@ -32,13 +32,14 @@ class EstResponsableCommercial(permissions.BasePermission):
 
 class EstVendeurOuResponsable(permissions.BasePermission):
     """
-    Permission accordée aux Vendeurs et Responsables Commerciaux.
+    Permission accordée aux Vendeurs, Responsables Commerciaux et Administrateurs.
     """
 
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and request.user.role in [
             Role.VENDEUR,
             Role.RESPONSABLE_COMMERCIAL,
+            Role.ADMINISTRATEUR,
         ]
 
 
@@ -76,13 +77,18 @@ class EstProprietaireOuVendeurOuResponsable(permissions.BasePermission):
 
 class PeutValiderCommande(permissions.BasePermission):
     """
-    Permission pour valider une commande : réservée au Responsable Commercial et Administrateur.
+    Permission pour valider une commande : réservée au Vendeur,
+    Responsable Commercial et Administrateur.
     """
 
     def has_object_permission(self, request, view, obj):
         return (
             request.user.is_authenticated
-            and request.user.role in [Role.RESPONSABLE_COMMERCIAL, Role.ADMINISTRATEUR]
+            and request.user.role in [
+                Role.VENDEUR,
+                Role.RESPONSABLE_COMMERCIAL,
+                Role.ADMINISTRATEUR,
+            ]
         )
 
 

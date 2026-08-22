@@ -1,9 +1,11 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, UpdateAPIView
+from rest_framework.permissions import IsAuthenticated
 
 from authentication.models import Role
-from .models import Commande, Facture, LigneCommande, Paiement, StatutCommande
+from .models import Commande, Facture, LigneCommande, Paiement, StatutCommande, Panier, LignePanier
 from .permissions import (
     EstClientOuVendeurOuResponsable,
     EstProprietaireCommandeOuResponsable,
@@ -22,6 +24,9 @@ from .serializers import (
     LigneCommandeCreateSerializer,
     LigneCommandeSerializer,
     PaiementSerializer,
+    PanierSerializer,
+    AjouterAuPanierSerializer,
+    ModifierQuantitePanierSerializer,
 )
 
 
@@ -96,13 +101,21 @@ class CommandeViewSet(viewsets.ModelViewSet):
         Valide une commande (décrémente le stock).
         Réservé au Responsable Commercial.
         """
-        commande = self.get_object()
+        print(f"Attempting to validate order with pk: {pk}")
+        print(f"Request user: {request.user}, role: {request.user.role}")
+        
         try:
+            commande = self.get_object()
+            print(f"Commande found: {commande}, statut: {commande.statut}")
             commande.valider_commande()
             serializer = self.get_serializer(commande)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
+            print(f"Validation error: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(f"Unexpected error: {str(e)}")
+            return Response({'error': f"Erreur inattendue: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     @action(detail=True, methods=['post'], url_path='annuler')
     def annuler(self, request, pk=None):
@@ -161,7 +174,7 @@ class LigneCommandeViewSet(viewsets.ModelViewSet):
 class PaiementViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour la gestion des paiements.
-    - Création : Vendeur et Responsable Commercial
+    - Création : Vendeur, Responsable Commercial et Administrateur
     - Lecture : tous les utilisateurs authentifiés
     """
 
@@ -212,3 +225,131 @@ class FactureViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [EstVendeurOuResponsable]
         return [permission() for permission in permission_classes]
+
+
+class PanierViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion du panier d'achat.
+    - Création/Lecture/Modification/Suppression : Clients uniquement
+    """
+
+    serializer_class = PanierSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Retourne uniquement le panier de l'utilisateur connecté."""
+        return Panier.objects.filter(client=self.request.user).prefetch_related('lignes__produit')
+
+    def get_object(self):
+        """Retourne ou crée le panier de l'utilisateur connecté."""
+        panier, created = Panier.objects.get_or_create(client=self.request.user)
+        return panier
+
+    def create(self, request, *args, **kwargs):
+        """Crée ou retourne le panier de l'utilisateur."""
+        panier, created = Panier.objects.get_or_create(client=request.user)
+        serializer = self.get_serializer(panier)
+        return Response(serializer.data, status=status.HTTP_200_OK if not created else status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['post'], url_path='ajouter')
+    def ajouter_article(self, request):
+        """Ajoute un produit au panier."""
+        serializer = AjouterAuPanierSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        produit = serializer.validated_data['produit']
+        quantite = serializer.validated_data['quantite']
+        
+        # Récupérer ou créer le panier
+        panier, _ = Panier.objects.get_or_create(client=request.user)
+        
+        # Vérifier le stock
+        if produit.stock < quantite:
+            return Response(
+                {'error': f'Stock insuffisant. Stock disponible: {produit.stock}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Ajouter ou mettre à jour la ligne de panier
+        ligne, created = LignePanier.objects.get_or_create(
+            panier=panier,
+            produit=produit,
+            defaults={'quantite': quantite}
+        )
+        
+        if not created:
+            nouvelle_quantite = ligne.quantite + quantite
+            if nouvelle_quantite > produit.stock:
+                return Response(
+                    {'error': f'Stock insuffisant. Stock disponible: {produit.stock}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            ligne.quantite = nouvelle_quantite
+            ligne.save()
+        
+        serializer = PanierSerializer(panier)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['put'], url_path='modifier/(?P<idProduit>[^/.]+)')
+    def modifier_quantite(self, request, idProduit=None):
+        """Modifie la quantité d'un article dans le panier."""
+        try:
+            panier = Panier.objects.get(client=request.user)
+            ligne = LignePanier.objects.get(panier=panier, produit_id=idProduit)
+        except (Panier.DoesNotExist, LignePanier.DoesNotExist):
+            return Response(
+                {'error': 'Article non trouvé dans le panier'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = ModifierQuantitePanierSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        quantite = serializer.validated_data['quantite']
+        
+        if quantite > ligne.produit.stock:
+            return Response(
+                {'error': f'Stock insuffisant. Stock disponible: {ligne.produit.stock}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        ligne.quantite = quantite
+        ligne.save()
+        
+        panier_serializer = PanierSerializer(panier)
+        return Response(panier_serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['delete'], url_path='supprimer/(?P<idProduit>[^/.]+)')
+    def supprimer_article(self, request, idProduit=None):
+        """Supprime un article du panier."""
+        try:
+            panier = Panier.objects.get(client=request.user)
+            ligne = LignePanier.objects.get(panier=panier, produit_id=idProduit)
+            ligne.delete()
+            
+            panier_serializer = PanierSerializer(panier)
+            return Response(panier_serializer.data, status=status.HTTP_200_OK)
+        except (Panier.DoesNotExist, LignePanier.DoesNotExist):
+            return Response(
+                {'error': 'Article non trouvé dans le panier'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(detail=False, methods=['delete'], url_path='vider')
+    def vider_panier(self, request):
+        """Vide le panier de l'utilisateur."""
+        try:
+            panier = Panier.objects.get(client=request.user)
+            panier.lignes.all().delete()
+            
+            panier_serializer = PanierSerializer(panier)
+            return Response(
+                {'message': 'Panier vidé avec succès'},
+                status=status.HTTP_200_OK
+            )
+        except Panier.DoesNotExist:
+            return Response(
+                {'error': 'Panier non trouvé'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+

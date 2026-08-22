@@ -124,6 +124,28 @@ Les paramètres sont configurés dans `config/settings.py` :
 - **ALLOWED_HOSTS** : Hôtes autorisés
 - **CORS_ALLOWED_ORIGINS** : Origines CORS pour le frontend
 
+### Réception des factures par email
+
+La facture est envoyée automatiquement à l'adresse email du client lors de sa
+création. Pour recevoir réellement les emails, définir ces variables avant de
+lancer Django :
+
+```powershell
+$env:EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+$env:EMAIL_HOST = 'smtp.gmail.com'
+$env:EMAIL_PORT = '587'
+$env:EMAIL_USE_TLS = 'true'
+$env:EMAIL_HOST_USER = 'falilousarr68@gmail.com'
+$env:EMAIL_HOST_PASSWORD = 'Dakar2026'
+$env:DEFAULT_FROM_EMAIL = 'falilousarr68@gmail.com'
+$env:FRONTEND_URL = 'http://localhost:3000'
+python manage.py runserver
+```
+
+Avec Gmail, utiliser un mot de passe d'application et non le mot de passe
+principal du compte. Sans configuration SMTP, le mode développement écrit
+l'email dans le terminal Django au lieu de l'envoyer sur Internet.
+
 ### Configuration JWT
 
 ```python
@@ -139,18 +161,18 @@ SIMPLE_JWT = {
 
 ### Authentication (`/api/auth/`)
 
-| Méthode | Endpoint                   | Description                            | Permissions           |
-| ------- | -------------------------- | -------------------------------------- | --------------------- |
-| POST    | `/api/auth/inscription/`   | Inscription d'un client               | Public                |
-| POST    | `/api/auth/connexion/`     | Connexion (JWT)                       | Public                |
-| GET     | `/api/auth/token/refresh/` | Rafraîchir le token JWT               | Authentifié           |
-| GET     | `/api/auth/profil/`        | Profil utilisateur connecté           | Authentifié           |
-| GET     | `/api/auth/utilisateurs/`  | Liste des utilisateurs (Admin)        | Administrateur        |
-| POST    | `/api/auth/utilisateurs/`  | Créer un utilisateur (Admin)          | Administrateur        |
-| GET     | `/api/auth/utilisateurs/{id}/` | Détail utilisateur (Admin)        | Administrateur        |
-| PUT     | `/api/auth/utilisateurs/{id}/` | Modifier utilisateur (Admin)      | Administrateur        |
-| PATCH   | `/api/auth/utilisateurs/{id}/` | Modification partielle (Admin)    | Administrateur        |
-| DELETE  | `/api/auth/utilisateurs/{id}/` | Supprimer utilisateur (Admin)    | Administrateur        |
+| Méthode | Endpoint                       | Description                    | Permissions    |
+| ------- | ------------------------------ | ------------------------------ | -------------- |
+| POST    | `/api/auth/inscription/`       | Inscription d'un client        | Public         |
+| POST    | `/api/auth/connexion/`         | Connexion (JWT)                | Public         |
+| GET     | `/api/auth/token/refresh/`     | Rafraîchir le token JWT        | Authentifié    |
+| GET     | `/api/auth/profil/`            | Profil utilisateur connecté    | Authentifié    |
+| GET     | `/api/auth/utilisateurs/`      | Liste des utilisateurs (Admin) | Administrateur |
+| POST    | `/api/auth/utilisateurs/`      | Créer un utilisateur (Admin)   | Administrateur |
+| GET     | `/api/auth/utilisateurs/{id}/` | Détail utilisateur (Admin)     | Administrateur |
+| PUT     | `/api/auth/utilisateurs/{id}/` | Modifier utilisateur (Admin)   | Administrateur |
+| PATCH   | `/api/auth/utilisateurs/{id}/` | Modification partielle (Admin) | Administrateur |
+| DELETE  | `/api/auth/utilisateurs/{id}/` | Supprimer utilisateur (Admin)  | Administrateur |
 
 **Exemple d'inscription :**
 
@@ -309,21 +331,21 @@ POST /api/ventes/commandes/{id}/annuler/
 
 ### Matrice des permissions
 
-| Action                  | Admin | Resp. Com. | Vendeur | Client    | Gest. Stock |
-| ----------------------- | ----- | ---------- | ------- | --------- | ----------- |
-| Authentification        | ✅    | ✅         | ✅      | ✅        | ✅          |
-| Gestion utilisateurs   | ✅    | ❌         | ❌      | ❌        | ❌          |
-| Catalogue (lecture)     | ✅    | ✅         | ✅      | ✅        | ✅          |
-| Catalogue (écriture)    | ✅    | ❌         | ❌      | ❌        | ✅          |
-| Commandes (lecture)     | ✅    | ✅         | ✅      | (propres) | ❌          |
-| Commandes (création)   | ✅    | ✅         | ✅      | ✅        | ❌          |
-| Validation commande     | ✅    | ✅         | ❌      | ❌        | ❌          |
-| Annulation commande     | ✅    | ✅         | ❌      | (propres) | ❌          |
-| Paiements               | ✅    | ✅         | ✅      | ❌        | ❌          |
-| Factures                | ✅    | ✅         | ✅      | ❌        | ❌          |
-| Paramètres système      | ✅    | ❌         | ❌      | ❌        | ❌          |
-| Rapports (lecture)      | ✅    | ✅         | ✅      | ✅        | ✅          |
-| Rapports (création)     | ✅    | ❌         | ❌      | ❌        | ❌          |
+| Action               | Admin | Resp. Com. | Vendeur | Client    | Gest. Stock |
+| -------------------- | ----- | ---------- | ------- | --------- | ----------- |
+| Authentification     | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Gestion utilisateurs | ✅    | ❌         | ❌      | ❌        | ❌          |
+| Catalogue (lecture)  | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Catalogue (écriture) | ✅    | ❌         | ❌      | ❌        | ✅          |
+| Commandes (lecture)  | ✅    | ✅         | ✅      | (propres) | ❌          |
+| Commandes (création) | ✅    | ✅         | ✅      | ✅        | ❌          |
+| Validation commande  | ✅    | ✅         | ❌      | ❌        | ❌          |
+| Annulation commande  | ✅    | ✅         | ❌      | (propres) | ❌          |
+| Paiements            | ✅    | ✅         | ✅      | ❌        | ❌          |
+| Factures             | ✅    | ✅         | ✅      | ❌        | ❌          |
+| Paramètres système   | ✅    | ❌         | ❌      | ❌        | ❌          |
+| Rapports (lecture)   | ✅    | ✅         | ✅      | ✅        | ✅          |
+| Rapports (création)  | ✅    | ❌         | ❌      | ❌        | ❌          |
 
 ## 🔧 Commandes utiles
 
