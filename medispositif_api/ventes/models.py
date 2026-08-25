@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -145,6 +145,12 @@ class Commande(models.Model):
         default=StatutCommande.EN_COURS,
         verbose_name='Statut de la commande',
     )
+    mode_paiement = models.CharField(
+        max_length=20,
+        choices=ModePaiement.choices,
+        default=ModePaiement.ESPECES,
+        verbose_name='Mode de paiement choisi par le client',
+    )
     motif_annulation = models.TextField(
         blank=True,
         verbose_name="Motif d'annulation",
@@ -170,11 +176,12 @@ class Commande(models.Model):
         self.montant_total = total
         self.save(update_fields=['montant_total'])
 
+    @transaction.atomic
     def valider_commande(self):
         """
         Valide la commande et décrémente le stock des produits.
         Vérifie la disponibilité du stock avant validation.
-        Crée automatiquement un paiement et une facture.
+        Crée automatiquement un paiement et une facture en utilisant le mode de paiement choisi par le client.
         """
         print(f"Validating commande #{self.pk}, statut: {self.statut}")
         
@@ -199,17 +206,15 @@ class Commande(models.Model):
         self.save(update_fields=['statut'])
 
         print("Creating payment and invoice")
-        # Créer automatiquement un paiement par défaut (espèces)
-        Paiement.objects.create(
+        Paiement.objects.update_or_create(
             commande=self,
-            montant=self.montant_total,
-            mode_paiement=ModePaiement.ESPECES
+            defaults={'montant': self.montant_total, 'mode_paiement': self.mode_paiement},
         )
 
-        # Créer automatiquement une facture
-        Facture.objects.create(
+        # La facture et le paiement sont créés une seule fois.
+        Facture.objects.get_or_create(
             commande=self,
-            montant=self.montant_total
+            defaults={'montant': self.montant_total},
         )
         print("Validation completed successfully")
 
@@ -367,12 +372,11 @@ class Facture(models.Model):
         return f'FAC-{date_str}-{compteur:04d}'
 
 
-@receiver(post_save, sender=Facture)
-def envoyer_facture_par_email(sender, instance, created, **kwargs):
+def envoyer_facture_email(instance):
     """
     Envoie automatiquement la facture par email au client lors de sa création.
     """
-    if created and instance.commande.client.email:
+    if instance.commande.client.email:
         try:
             context = {
                 'client_nom': instance.commande.client.nom,
@@ -394,7 +398,12 @@ def envoyer_facture_par_email(sender, instance, created, **kwargs):
             
             html_content = render_to_string('emails/facture_email.html', context)
             
-            send_mail(
+            print(f"Tentative d'envoi de l'email pour la facture #{instance.numero} à {instance.commande.client.email}")
+            print(f"Configuration EMAIL_HOST: {settings.EMAIL_HOST}")
+            print(f"Configuration EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
+            print(f"Configuration EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+            
+            result = send_mail(
                 subject=f'Votre facture #{instance.numero} - MediDispositif',
                 message='Votre facture est disponible en pièce jointe.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
@@ -403,6 +412,15 @@ def envoyer_facture_par_email(sender, instance, created, **kwargs):
                 fail_silently=False,
             )
             
-            print(f"Facture #{instance.numero} envoyée par email à {instance.commande.client.email}")
+            print(f"Résultat de l'envoi d'email: {result}")
+            print(f"✅ Facture #{instance.numero} envoyée par email à {instance.commande.client.email}")
         except Exception as e:
-            print(f"Erreur lors de l'envoi de l'email pour la facture #{instance.numero}: {str(e)}")
+            print(f"❌ Erreur lors de l'envoi de l'email pour la facture #{instance.numero}: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+
+@receiver(post_save, sender=Facture)
+def envoyer_facture_par_email(sender, instance, created, **kwargs):
+    if created:
+        envoyer_facture_email(instance)

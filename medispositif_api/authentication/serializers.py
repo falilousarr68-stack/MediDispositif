@@ -53,6 +53,7 @@ class InscriptionClientSerializer(serializers.ModelSerializer):
         utilisateur = Utilisateur.objects.create_user(
             password=motdepasse,
             role=Role.CLIENT,
+            is_active=True,  # S'assurer que le client est actif
             **validated_data,
         )
         return utilisateur
@@ -150,6 +151,9 @@ class GestionUtilisateurSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'motdepasse': 'Le mot de passe est obligatoire pour la création.'}
             )
+
+        # S'assurer que l'utilisateur est actif par défaut
+        validated_data.setdefault('is_active', True)
 
         utilisateur = Utilisateur.objects.create_user(
             password=motdepasse,

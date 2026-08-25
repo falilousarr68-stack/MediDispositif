@@ -10,6 +10,7 @@ interface CreateOrderData {
     quantite: number;
     prix_unitaire: number;
   }>;
+  mode_paiement?: string;
 }
 
 export function useCreateOrder() {

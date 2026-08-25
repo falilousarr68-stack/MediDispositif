@@ -6,6 +6,7 @@ import { normalizeOrder, normalizeOrders } from "@/lib/orders";
 
 interface ValidateOrderData {
   reason?: string;
+  mode_paiement?: "Especes" | "Carte" | "MobileMoney" | "Cheque";
 }
 
 interface CancelOrderData {
@@ -61,14 +62,19 @@ export function useValidateOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast.success("Commande validée", {
         description: "✅ La commande a été validée et le stock décrémenté",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const responseError = error.response?.data?.error;
       toast.error("Erreur de validation", {
-        description: "❌ Impossible de valider la commande",
+        description: responseError || "❌ Impossible de valider la commande",
       });
+      if (error.response?.data) {
+        console.error("Erreur de validation:", error.response.data);
+      }
     },
   });
 }
@@ -149,8 +155,19 @@ export function useCreatePayment() {
 export function useGenerateInvoice() {
   return useMutation({
     mutationFn: async (orderId: string) => {
-      const response = await api.post(`api/ventes/factures/`, {
-        order: orderId,
+      const existingResponse = await api.get("api/ventes/factures/", {
+        params: { commande: orderId },
+      });
+      const existingInvoices = Array.isArray(existingResponse.data)
+        ? existingResponse.data
+        : existingResponse.data.results || [];
+
+      if (existingInvoices.length > 0) {
+        return existingInvoices[0];
+      }
+
+      const response = await api.post("api/ventes/factures/", {
+        idCommande: orderId,
       });
       return response.data;
     },
@@ -163,10 +180,17 @@ export function useGenerateInvoice() {
         description: "✅ La facture a été générée avec succès",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const responseData = error.response?.data;
+      const errorMessage =
+        responseData?.detail ||
+        responseData?.error ||
+        (typeof responseData === "string" ? responseData : null) ||
+        "❌ Impossible de générer la facture";
       toast.error("Erreur de génération", {
-        description: "❌ Impossible de générer la facture",
+        description: errorMessage,
       });
+      console.error("Erreur de génération de facture:", responseData || error);
     },
   });
 }

@@ -34,6 +34,15 @@ class ProduitMedicalSerializer(serializers.ModelSerializer):
             'image',
         ]
 
+    def validate(self, attrs):
+        # Validation pour s'assurer que l'image est un fichier valide si fournie
+        if 'image' in attrs and attrs['image']:
+            if not hasattr(attrs['image'], 'read'):
+                raise serializers.ValidationError({
+                    'image': 'Le fichier image est invalide.'
+                })
+        return super().validate(attrs)
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         if representation.get('image'):
@@ -43,7 +52,6 @@ class ProduitMedicalSerializer(serializers.ModelSerializer):
                     representation['image']
                 )
         return representation
-        # Le stock peut être défini lors de la création
         
     def validate_idCatalogue(self, value):
         """Validation personnalisée pour le catalogue."""
@@ -108,6 +116,7 @@ class DetailsApprovisionnementSerializer(serializers.ModelSerializer):
         queryset=ProduitMedical.objects.all(),
     )
     nom_produit = serializers.CharField(source='produit.nom', read_only=True)
+    image = serializers.ImageField(source='produit.image', read_only=True)
 
     class Meta:
         model = DetailsApprovisionnement
@@ -115,6 +124,7 @@ class DetailsApprovisionnementSerializer(serializers.ModelSerializer):
             'idDetailApp',
             'idProduit',
             'nom_produit',
+            'image',
             'quantite',
             'prix_unitaire_achat',
             'montant',

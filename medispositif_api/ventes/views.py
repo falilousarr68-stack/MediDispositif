@@ -5,7 +5,16 @@ from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, 
 from rest_framework.permissions import IsAuthenticated
 
 from authentication.models import Role
-from .models import Commande, Facture, LigneCommande, Paiement, StatutCommande, Panier, LignePanier
+from .models import (
+    Commande,
+    Facture,
+    LigneCommande,
+    Paiement,
+    StatutCommande,
+    Panier,
+    LignePanier,
+    envoyer_facture_email,
+)
 from .permissions import (
     EstClientOuVendeurOuResponsable,
     EstProprietaireCommandeOuResponsable,
@@ -100,13 +109,16 @@ class CommandeViewSet(viewsets.ModelViewSet):
         """
         Valide une commande (décrémente le stock).
         Réservé au Responsable Commercial.
+        Le mode de paiement utilisé est celui choisi par le client lors de la commande.
         """
         print(f"Attempting to validate order with pk: {pk}")
         print(f"Request user: {request.user}, role: {request.user.role}")
         
         try:
             commande = self.get_object()
-            print(f"Commande found: {commande}, statut: {commande.statut}")
+            print(f"Commande found: {commande}, statut: {commande.statut}, mode_paiement: {commande.mode_paiement}")
+            validation_serializer = CommandeValidationSerializer(data=request.data)
+            validation_serializer.is_valid(raise_exception=True)
             commande.valider_commande()
             serializer = self.get_serializer(commande)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -213,6 +225,9 @@ class FactureViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Facture.objects.select_related('commande__client')
 
+        if self.request.user.role == Role.CLIENT:
+            queryset = queryset.filter(commande__client=self.request.user)
+
         commande_id = self.request.query_params.get('commande')
         if commande_id:
             queryset = queryset.filter(commande_id=commande_id)
@@ -223,8 +238,39 @@ class FactureViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             permission_classes = [EstClientOuVendeurOuResponsable]
         else:
-            permission_classes = [EstVendeurOuResponsable]
+            permission_classes = [EstClientOuVendeurOuResponsable]
         return [permission() for permission in permission_classes]
+
+    def create(self, request, *args, **kwargs):
+        """Return an existing invoice instead of creating a duplicate."""
+        commande_id = request.data.get('idCommande')
+        facture = Facture.objects.filter(commande_id=commande_id).first()
+
+        if facture:
+            if (
+                request.user.role == Role.CLIENT
+                and facture.commande.client_id != request.user.id
+            ):
+                return Response(
+                    {'detail': 'Vous ne pouvez pas accéder à cette facture.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            envoyer_facture_email(facture)
+            return Response(FactureSerializer(facture).data, status=status.HTTP_200_OK)
+
+        if (
+            request.user.role == Role.CLIENT
+            and not Commande.objects.filter(
+                pk=commande_id,
+                client=request.user,
+            ).exists()
+        ):
+            return Response(
+                {'detail': 'Vous ne pouvez pas générer cette facture.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return super().create(request, *args, **kwargs)
 
 
 class PanierViewSet(viewsets.ModelViewSet):

@@ -18,6 +18,7 @@ import {
   BarChart3,
   PieChart,
   FileText,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -218,6 +219,7 @@ export default function ProfilePage() {
     Array<{ name: string; value: number; color: string }>
   >([]);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Clé pour forcer le rafraîchissement
 
   const {
     register,
@@ -227,6 +229,11 @@ export default function ProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
   });
+
+  // Fonction pour rafraîchir les statistiques
+  const refreshStatistics = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   // Récupérer les statistiques depuis l'API
   useEffect(() => {
@@ -310,7 +317,7 @@ export default function ProfilePage() {
     };
 
     fetchStatistics();
-  }, [user?.role]); // Ne dépend que du rôle, pas de l'objet user complet
+  }, [user?.role, refreshKey]); // Dépend aussi de refreshKey pour forcer le rafraîchissement
 
   const setDefaultData = () => {
     const defaultSalesData = [{ name: "Général", sold: 0, total: 0 }];
@@ -590,10 +597,21 @@ export default function ProfilePage() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Produits Vendus vs Stock Total par Produit
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5" />
+                        Produits Vendus vs Stock Total par Produit
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={refreshStatistics}
+                        disabled={loadingStats}
+                        title="Rafraîchir les statistiques"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {loadingStats ? (
@@ -616,10 +634,21 @@ export default function ProfilePage() {
               >
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <PieChart className="h-5 w-5" />
-                      Répartition des Ventes sur le Stock Total du Catalogue
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <PieChart className="h-5 w-5" />
+                        Répartition des Ventes sur le Stock Total du Catalogue
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={refreshStatistics}
+                        disabled={loadingStats}
+                        title="Rafraîchir les statistiques"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {loadingStats ? (

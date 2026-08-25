@@ -118,10 +118,20 @@ export default function CheckoutPage() {
         };
       });
 
+      // Convertir le mode de paiement frontend au format backend
+      const paymentModeMapping: Record<string, string> = {
+        cash: "Especes",
+        card: "Carte",
+        mobile_money: "MobileMoney",
+        check: "Cheque",
+      };
+
       console.log("Transforming cart items to order lines:", lignes);
+      console.log("Payment method:", data.payment_method, "converted to:", paymentModeMapping[data.payment_method]);
 
       await createOrder.mutateAsync({
         lignes,
+        mode_paiement: paymentModeMapping[data.payment_method],
       });
       clearCart();
       router.push(`/${locale}/checkout/success`);

@@ -1,42 +1,42 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { 
-  useOrders, 
-  useValidateOrder, 
+import React, { useState } from "react";
+import { useTranslations } from "next-intl";
+import {
+  useOrders,
+  useValidateOrder,
   useCreatePayment,
   useGenerateInvoice,
   useOrdersByStatus,
-  useRecentOrders
-} from '@/hooks/use-sales';
-import { Order } from '@/types';
-import { OrderTable } from '@/components/sales/order-table';
-import { OrderDetailsCard } from '@/components/sales/order-details-card';
-import { ValidateOrderModal } from '@/components/sales/validate-order-modal';
-import { PaymentModal } from '@/components/sales/payment-modal';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { motion } from 'framer-motion';
-import { 
-  ShoppingCart, 
-  CheckCircle, 
-  DollarSign, 
+  useRecentOrders,
+} from "@/hooks/use-sales";
+import { Order } from "@/types";
+import { OrderTable } from "@/components/sales/order-table";
+import { OrderDetailsCard } from "@/components/sales/order-details-card";
+import { ValidateOrderModal } from "@/components/sales/validate-order-modal";
+import { PaymentModal } from "@/components/sales/payment-modal";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import {
+  ShoppingCart,
+  CheckCircle,
+  DollarSign,
   Clock,
   X,
-  FileText
-} from 'lucide-react';
-import { useLocale } from 'next-intl';
+  FileText,
+} from "lucide-react";
+import { useLocale } from "next-intl";
 
 export default function VendorDashboardPage() {
-  const t = useTranslations('sales');
+  const t = useTranslations("sales");
   const locale = useLocale();
-  
+
   const { data: orders, isLoading } = useOrders();
-  const { data: pendingOrders } = useOrdersByStatus('pending');
-  const { data: validatedOrders } = useOrdersByStatus('validated');
+  const { data: pendingOrders } = useOrdersByStatus("pending");
+  const { data: validatedOrders } = useOrdersByStatus("validated");
   const { data: recentOrders } = useRecentOrders(10);
-  
+
   const validateOrder = useValidateOrder();
   const createPayment = useCreatePayment();
   const generateInvoice = useGenerateInvoice();
@@ -68,16 +68,17 @@ export default function VendorDashboardPage() {
   // Calculer le chiffre du jour en utilisant les champs backend français
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
-  const dailyRevenue = orders?.reduce((sum: number, order: any) => {
-    const orderDate = new Date(order.date_commande || order.created_at);
-    orderDate.setHours(0, 0, 0, 0);
-    
-    if (orderDate.getTime() === today.getTime()) {
-      return sum + (order.montant_total || order.total || 0);
-    }
-    return sum;
-  }, 0) || 0;
+
+  const dailyRevenue =
+    orders?.reduce((sum: number, order: any) => {
+      const orderDate = new Date(order.date_commande || order.created_at);
+      orderDate.setHours(0, 0, 0, 0);
+
+      if (orderDate.getTime() === today.getTime()) {
+        return sum + (order.montant_total || order.total || 0);
+      }
+      return sum;
+    }, 0) || 0;
 
   if (isLoading) {
     return (
@@ -116,11 +117,15 @@ export default function VendorDashboardPage() {
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  En Attente
+                </CardTitle>
                 <Clock className="h-4 w-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-500">{pendingOrders?.length || 0}</div>
+                <div className="text-2xl font-bold text-orange-500">
+                  {pendingOrders?.length || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">À traiter</p>
               </CardContent>
             </Card>
@@ -137,7 +142,9 @@ export default function VendorDashboardPage() {
                 <CheckCircle className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-500">{validatedOrders?.length || 0}</div>
+                <div className="text-2xl font-bold text-green-500">
+                  {validatedOrders?.length || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">Confirmées</p>
               </CardContent>
             </Card>
@@ -150,7 +157,9 @@ export default function VendorDashboardPage() {
           >
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Chiffre du jour</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Chiffre du jour
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
@@ -222,7 +231,9 @@ export default function VendorDashboardPage() {
           order={selectedOrder}
           open={validateModalOpen}
           onOpenChange={setValidateModalOpen}
-          onConfirm={(order) => validateOrder.mutate({ id: order.id })}
+          onConfirm={(order) =>
+            validateOrder.mutate({ id: order.id })
+          }
         />
 
         {/* Payment Modal */}
@@ -230,7 +241,9 @@ export default function VendorDashboardPage() {
           order={selectedOrder}
           open={paymentModalOpen}
           onOpenChange={setPaymentModalOpen}
-          onConfirm={(order, data) => createPayment.mutate({ ...data, order: order.id })}
+          onConfirm={(order, data) =>
+            createPayment.mutate({ ...data, order: order.id })
+          }
         />
       </motion.div>
     </div>

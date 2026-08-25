@@ -136,7 +136,7 @@ $env:EMAIL_HOST = 'smtp.gmail.com'
 $env:EMAIL_PORT = '587'
 $env:EMAIL_USE_TLS = 'true'
 $env:EMAIL_HOST_USER = 'falilousarr68@gmail.com'
-$env:EMAIL_HOST_PASSWORD = 'Dakar2026'
+$env:EMAIL_HOST_PASSWORD = '<mot-de-passe-d-application-Gmail>'
 $env:DEFAULT_FROM_EMAIL = 'falilousarr68@gmail.com'
 $env:FRONTEND_URL = 'http://localhost:3000'
 python manage.py runserver

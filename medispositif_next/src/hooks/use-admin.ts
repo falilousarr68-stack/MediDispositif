@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/axios";
 
 export interface User {
   idUser?: string;
@@ -8,15 +8,20 @@ export interface User {
   prenom: string;
   nom: string;
   telephone?: string;
-  role: 'Administrateur' | 'ResponsableCommercial' | 'Vendeur' | 'GestionnaireDeStock' | 'Client';
+  role:
+    | "Administrateur"
+    | "ResponsableCommercial"
+    | "Vendeur"
+    | "GestionnaireDeStock"
+    | "Client";
   created_at?: string;
 }
 
 export const useUsers = () => {
   return useQuery({
-    queryKey: ['users'],
+    queryKey: ["users"],
     queryFn: async () => {
-      const response = await api.get('api/auth/utilisateurs/');
+      const response = await api.get("api/auth/utilisateurs/");
       // L'API retourne { utilisateurs: [...], total: ... }
       return response.data.utilisateurs || response.data;
     },
@@ -25,7 +30,7 @@ export const useUsers = () => {
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (userData: {
       email: string;
@@ -34,43 +39,52 @@ export const useCreateUser = () => {
       prenom: string;
       nom: string;
       telephone?: string;
-      role: 'ResponsableCommercial' | 'Vendeur' | 'GestionnaireDeStock';
+      role: "ResponsableCommercial" | "Vendeur" | "GestionnaireDeStock";
     }) => {
-      console.log('Creating user with data:', userData);
-      const response = await api.post('api/auth/utilisateurs/', userData);
-      console.log('User creation response:', response.data);
+      console.log("Creating user with data:", userData);
+      const response = await api.post("api/auth/utilisateurs/", userData);
+      console.log("User creation response:", response.data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 };
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (userId: string) => {
       const response = await api.delete(`api/auth/utilisateurs/${userId}/`);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 };
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ userId, userData }: { userId: string; userData: Partial<User> }) => {
-      const response = await api.put(`api/auth/utilisateurs/${userId}/`, userData);
+    mutationFn: async ({
+      userId,
+      userData,
+    }: {
+      userId: string;
+      userData: Partial<User>;
+    }) => {
+      const response = await api.put(
+        `api/auth/utilisateurs/${userId}/`,
+        userData
+      );
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 };
@@ -78,10 +92,10 @@ export const useUpdateUser = () => {
 // Hooks pour les commandes
 export const useOrders = () => {
   return useQuery({
-    queryKey: ['orders'],
+    queryKey: ["orders"],
     queryFn: async () => {
-      const response = await api.get('api/ventes/commandes/');
-      console.log('Orders response:', response.data);
+      const response = await api.get("api/ventes/commandes/");
+      console.log("Orders response:", response.data);
       // Handle both array and paginated response formats
       if (Array.isArray(response.data)) {
         return response.data;
@@ -97,46 +111,57 @@ export const useOrders = () => {
 
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (orderData: any) => {
-      const response = await api.post('api/ventes/commandes/', orderData);
+      const response = await api.post("api/ventes/commandes/", orderData);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
   });
 };
 
 export const useValidateOrder = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (orderId: string) => {
-      console.log('Validating order with ID:', orderId);
-      const response = await api.post(`api/ventes/commandes/${orderId}/valider/`);
-      console.log('Validation response:', response.data);
+      console.log("Validating order with ID:", orderId);
+      const response = await api.post(
+        `api/ventes/commandes/${orderId}/valider/`
+      );
+      console.log("Validation response:", response.data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
 };
 
 export const useCancelOrder = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ orderId, motif }: { orderId: string; motif: string }) => {
-      const response = await api.post(`api/ventes/commandes/${orderId}/annuler/`, { motif });
+    mutationFn: async ({
+      orderId,
+      motif,
+    }: {
+      orderId: string;
+      motif: string;
+    }) => {
+      const response = await api.post(
+        `api/ventes/commandes/${orderId}/annuler/`,
+        { motif }
+      );
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
     },
   });
 };
@@ -144,10 +169,10 @@ export const useCancelOrder = () => {
 // Hooks pour les paiements
 export const usePayments = () => {
   return useQuery({
-    queryKey: ['payments'],
+    queryKey: ["payments"],
     queryFn: async () => {
-      const response = await api.get('api/ventes/paiements/');
-      console.log('Payments response:', response.data);
+      const response = await api.get("api/ventes/paiements/");
+      console.log("Payments response:", response.data);
       // Handle different response formats
       if (Array.isArray(response.data)) {
         return response.data;
@@ -161,14 +186,29 @@ export const usePayments = () => {
 
 export const useCreatePayment = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (paymentData: any) => {
-      const response = await api.post('api/ventes/paiements/', paymentData);
+      // Correspondance exacte avec les valeurs du backend ModePaiement
+      const paymentModes: Record<string, string> = {
+        cash: "Especes",
+        card: "Carte",
+        mobile_money: "MobileMoney",
+        check: "Cheque",
+      };
+      const modePaiement = paymentModes[String(paymentData.method)] || "Especes";
+      
+      console.log("Creating payment with method:", paymentData.method, "converted to:", modePaiement);
+      
+      const response = await api.post("api/ventes/paiements/", {
+        idCommande: paymentData.order,
+        montant: paymentData.amount,
+        mode_paiement: modePaiement,
+      });
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
   });
 };
@@ -176,10 +216,10 @@ export const useCreatePayment = () => {
 // Hooks pour les factures
 export const useInvoices = () => {
   return useQuery({
-    queryKey: ['invoices'],
+    queryKey: ["invoices"],
     queryFn: async () => {
-      const response = await api.get('api/ventes/factures/');
-      console.log('Invoices response:', response.data);
+      const response = await api.get("api/ventes/factures/");
+      console.log("Invoices response:", response.data);
       // Handle different response formats
       if (Array.isArray(response.data)) {
         return response.data;
@@ -193,14 +233,14 @@ export const useInvoices = () => {
 
 export const useCreateInvoice = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (invoiceData: any) => {
-      const response = await api.post('api/ventes/factures/', invoiceData);
+      const response = await api.post("api/ventes/factures/", invoiceData);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
 };
@@ -208,9 +248,9 @@ export const useCreateInvoice = () => {
 // Hooks pour les rapports
 export const useReports = () => {
   return useQuery({
-    queryKey: ['reports'],
+    queryKey: ["reports"],
     queryFn: async () => {
-      const response = await api.get('api/systeme/rapports/');
+      const response = await api.get("api/systeme/rapports/");
       return response.data;
     },
   });
@@ -218,16 +258,16 @@ export const useReports = () => {
 
 export const useCreateReport = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (reportData: any) => {
-      console.log('Creating report with data:', reportData);
-      const response = await api.post('api/systeme/rapports/', reportData);
-      console.log('Report creation response:', response.data);
+      console.log("Creating report with data:", reportData);
+      const response = await api.post("api/systeme/rapports/", reportData);
+      console.log("Report creation response:", response.data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
     },
   });
 };
@@ -235,10 +275,10 @@ export const useCreateReport = () => {
 // Hooks pour les paramètres système
 export const useSystemParams = () => {
   return useQuery({
-    queryKey: ['system-params'],
+    queryKey: ["system-params"],
     queryFn: async () => {
-      const response = await api.get('api/systeme/parametres/');
-      console.log('System params response:', response.data);
+      const response = await api.get("api/systeme/parametres/");
+      console.log("System params response:", response.data);
       // Handle different response formats
       if (Array.isArray(response.data)) {
         return response.data;
@@ -252,14 +292,23 @@ export const useSystemParams = () => {
 
 export const useUpdateSystemParam = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ paramId, paramData }: { paramId: string; paramData: any }) => {
-      const response = await api.put(`api/systeme/parametres/${paramId}/`, paramData);
+    mutationFn: async ({
+      paramId,
+      paramData,
+    }: {
+      paramId: string;
+      paramData: any;
+    }) => {
+      const response = await api.put(
+        `api/systeme/parametres/${paramId}/`,
+        paramData
+      );
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['system-params'] });
+      queryClient.invalidateQueries({ queryKey: ["system-params"] });
     },
   });
 };
@@ -267,10 +316,10 @@ export const useUpdateSystemParam = () => {
 // Hook pour les statistiques de produits
 export const useProductStatistics = () => {
   return useQuery({
-    queryKey: ['product-statistics'],
+    queryKey: ["product-statistics"],
     queryFn: async () => {
-      const response = await api.get('api/catalogue/statistiques/produits/');
-      console.log('Product statistics response:', response.data);
+      const response = await api.get("api/catalogue/statistiques/produits/");
+      console.log("Product statistics response:", response.data);
       return response.data;
     },
   });

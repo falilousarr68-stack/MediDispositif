@@ -176,6 +176,7 @@ class CommandeListSerializer(serializers.ModelSerializer):
     nom_client = serializers.CharField(source='client.get_full_name', read_only=True)
     email_client = serializers.CharField(source='client.email', read_only=True)
     nombre_lignes = serializers.SerializerMethodField()
+    mode_paiement_display = serializers.CharField(source='get_mode_paiement_display', read_only=True)
 
     class Meta:
         model = Commande
@@ -186,6 +187,8 @@ class CommandeListSerializer(serializers.ModelSerializer):
             'date_commande',
             'montant_total',
             'statut',
+            'mode_paiement',
+            'mode_paiement_display',
             'nombre_lignes',
         ]
 
@@ -200,6 +203,7 @@ class CommandeDetailSerializer(serializers.ModelSerializer):
     client = serializers.SerializerMethodField()
     lignes = LigneCommandeSerializer(many=True, read_only=True)
     statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+    mode_paiement_display = serializers.CharField(source='get_mode_paiement_display', read_only=True)
 
     class Meta:
         model = Commande
@@ -210,10 +214,12 @@ class CommandeDetailSerializer(serializers.ModelSerializer):
             'montant_total',
             'statut',
             'statut_display',
+            'mode_paiement',
+            'mode_paiement_display',
             'motif_annulation',
             'lignes',
         ]
-        read_only_fields = ['montant_total', 'statut', 'motif_annulation']
+        read_only_fields = ['montant_total', 'statut', 'motif_annulation', 'mode_paiement']
 
     def get_client(self, obj):
         return {
@@ -229,16 +235,25 @@ class CommandeCreateSerializer(serializers.ModelSerializer):
     """Serializer pour la création d'une commande avec ses lignes."""
 
     lignes = LigneCommandeCreateSerializer(many=True, write_only=True)
+    mode_paiement = serializers.ChoiceField(
+        choices=ModePaiement.choices,
+        required=False,
+        default=ModePaiement.ESPECES,
+    )
 
     class Meta:
         model = Commande
-        fields = ['lignes']
+        fields = ['lignes', 'mode_paiement']
 
     def create(self, validated_data):
         lignes_data = validated_data.pop('lignes')
+        mode_paiement = validated_data.pop('mode_paiement', ModePaiement.ESPECES)
         client = self.context['request'].user
 
-        commande = Commande.objects.create(client=client)
+        commande = Commande.objects.create(
+            client=client,
+            mode_paiement=mode_paiement
+        )
 
         for ligne_data in lignes_data:
             produit = ligne_data['produit']

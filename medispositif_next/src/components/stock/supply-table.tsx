@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Package, Calendar, Hash, Trash2, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
+import { getMediaUrl } from "@/lib/utils";
 
 interface SupplyTableProps {
   supplies: Supply[];
@@ -57,6 +58,9 @@ export function SupplyTable({ supplies, onDelete }: SupplyTableProps) {
                 const expiringSoon =
                   !expired && isExpiringSoon(supply.expiry_date);
                 const product = supply.product;
+                const imageUrl = getMediaUrl(
+                  product?.image as string | undefined
+                );
 
                 return (
                   <motion.tr
@@ -69,7 +73,15 @@ export function SupplyTable({ supplies, onDelete }: SupplyTableProps) {
                     <td className="p-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-xl">
-                          💊
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={product?.nom || product?.name || "Produit"}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            "💊"
+                          )}
                         </div>
                         <div>
                           <p className="font-medium">

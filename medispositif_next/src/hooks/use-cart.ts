@@ -98,7 +98,6 @@ export const useCart = create<CartStore>()(
         const token = localStorage.getItem("access_token");
 
         if (token) {
-          // Utiliser l'API si l'utilisateur est connecté
           try {
             const productId = product.idProduit; // Utiliser uniquement idProduit
             console.log(

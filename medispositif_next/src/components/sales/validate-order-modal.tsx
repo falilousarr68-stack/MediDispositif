@@ -43,7 +43,8 @@ export function ValidateOrderModal({
           </DialogTitle>
           <DialogDescription>
             Êtes-vous sûr de vouloir valider cette commande ? Cette action
-            décrémentera automatiquement le stock des produits.
+            décrémentera automatiquement le stock des produits. Le mode de paiement
+            sera celui choisi par le client lors de la commande.
           </DialogDescription>
         </DialogHeader>
 
@@ -53,6 +54,12 @@ export function ValidateOrderModal({
               <span className="text-muted-foreground">Commande:</span>
               <span className="font-medium">
                 #{order.id ? order.id.toString().slice(-8) : "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Mode de paiement:</span>
+              <span className="font-medium">
+                {order.payment_method || "Non spécifié"}
               </span>
             </div>
             <div className="flex justify-between text-sm">

@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
   // Données React Query gardées (données complexes qui bénéficient du cache)
   const { data: users, isLoading, refetch } = useUsers();
   const { data: orders } = useOrders();
-  const { data: payments } = usePayments();
+  const { data: payments, refetch: refetchPayments } = usePayments();
   const { data: invoices } = useInvoices();
   const { data: reports } = useReports();
 
@@ -108,6 +108,12 @@ export default function AdminDashboardPage() {
 
     fetchReportTypes();
   }, []);
+
+  useEffect(() => {
+    if (activeSection === "paiements") {
+      refetchPayments();
+    }
+  }, [activeSection, refetchPayments]);
 
   // Initialiser le thème au chargement
   useEffect(() => {
@@ -474,6 +480,9 @@ export default function AdminDashboardPage() {
                                 Statut: {order.statut || order.status}
                               </p>
                               <p className="text-sm text-muted-foreground">
+                                Mode de paiement: {order.mode_paiement_display || order.mode_paiement || "Non spécifié"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
                                 Total: {order.montant_total || order.total} FCFA
                               </p>
                             </div>
@@ -487,6 +496,7 @@ export default function AdminDashboardPage() {
                                     .then(() => {
                                       toast.success("Commande validée");
                                       refetch();
+                                      refetchPayments();
                                     })
                                     .catch(error => {
                                       console.error(
@@ -560,18 +570,22 @@ export default function AdminDashboardPage() {
                     <div className="space-y-2">
                       {payments.slice(0, 5).map((payment: any) => (
                         <div
-                          key={payment.id}
+                          key={payment.idPaiement || payment.id}
                           className="p-3 bg-muted rounded-lg"
                         >
-                          <p className="font-medium">Paiement #{payment.id}</p>
+                          <p className="font-medium">
+                            Paiement #{payment.idPaiement || payment.id}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             Montant: {payment.montant || payment.amount} FCFA
                           </p>
                           <p className="text-sm text-muted-foreground">
                             Méthode:{" "}
-                            {payment.mode_paiement ||
+                            {payment.mode_paiement_display ||
+                              payment.mode_paiement ||
                               payment.methode ||
-                              payment.method}
+                              payment.method ||
+                              "Non spécifié"}
                           </p>
                         </div>
                       ))}
@@ -612,7 +626,11 @@ export default function AdminDashboardPage() {
                             Facture #{invoice.numero || invoice.id}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Montant: {invoice.montant_total || invoice.total}{" "}
+                            Montant:{" "}
+                            {invoice.montant ??
+                              invoice.montant_total ??
+                              invoice.total ??
+                              0}{" "}
                             FCFA
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -687,7 +705,7 @@ export default function AdminDashboardPage() {
                       createReportMutation
                         .mutateAsync({
                           titre: "Rapport de test",
-                          type_rapport: "VENTES",
+                          type_rapport: "Ventes",
                           commentaires: "Rapport généré par l'administrateur",
                         })
                         .then(() => toast.success("Rapport créé"))

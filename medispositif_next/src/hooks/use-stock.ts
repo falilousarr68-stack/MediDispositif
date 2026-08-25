@@ -47,8 +47,8 @@ export function useCreateProduct() {
     mutationFn: async (data: CreateProductData | FormData) => {
       const isFormData = data instanceof FormData;
 
-      // Ne pas définir manuellement Content-Type : le navigateur/Axios ajoute
-      // automatiquement la boundary nécessaire à une requête multipart.
+      // Pour les uploads de fichiers, ne pas définir Content-Type
+      // Axios va automatiquement ajouter le bon Content-Type avec boundary
       const config = isFormData
         ? { headers: { "Content-Type": undefined } }
         : {};
@@ -108,7 +108,7 @@ export function useUpdateProduct() {
     mutationFn: async ({ id, data }: UpdateProductData) => {
       const isFormData = data instanceof FormData;
 
-      // Même règle pour la modification : laisser Axios générer la boundary.
+      // Pour les uploads de fichiers, ne pas définir Content-Type
       const config = isFormData
         ? { headers: { "Content-Type": undefined } }
         : {};
@@ -184,6 +184,7 @@ export function useSupplies() {
               prix: Number(detail.prix_unitaire_achat || 0),
               stock: 0,
               catalogue: "",
+              image: detail.image || undefined,
             },
             quantity: Number(detail.quantite || 0),
             lot_number: detail.numero_lot || "",
