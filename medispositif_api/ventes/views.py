@@ -119,7 +119,12 @@ class CommandeViewSet(viewsets.ModelViewSet):
             print(f"Commande found: {commande}, statut: {commande.statut}, mode_paiement: {commande.mode_paiement}")
             validation_serializer = CommandeValidationSerializer(data=request.data)
             validation_serializer.is_valid(raise_exception=True)
+            
+            print(f"ATTENTION A propos de valider la commande #{commande.pk}")
             commande.valider_commande()
+            
+            print(f"OK Commande #{commande.pk} validee avec succes, nouveau statut: {commande.statut}")
+            
             serializer = self.get_serializer(commande)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
@@ -134,7 +139,12 @@ class CommandeViewSet(viewsets.ModelViewSet):
         """
         Annule une commande avec un motif obligatoire pour le Responsable Commercial.
         """
+        print(f"Attempting to cancel order with pk: {pk}")
+        print(f"Request user: {request.user}, role: {request.user.role}")
+        
         commande = self.get_object()
+        print(f"Commande found: {commande}, statut: {commande.statut}")
+        
         serializer = CommandeValidationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -147,10 +157,14 @@ class CommandeViewSet(viewsets.ModelViewSet):
             )
 
         try:
+            print(f"ATTENTION A propos d'annuler la commande #{commande.pk} avec motif: {motif}")
             commande.annuler_commande(motif)
+            print(f"OK Commande #{commande.pk} annulee avec succes, nouveau statut: {commande.statut}")
+            
             serializer = self.get_serializer(commande)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
+            print(f"Annulation error: {str(e)}")
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 

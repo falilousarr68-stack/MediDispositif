@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Commande Validée - MediDispositif</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 20px;
+        text-align: center;
+        border-radius: 10px 10px 0 0;
+      }
+      .content {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 0 0 10px 10px;
+      }
+      .success-box {
+        background: #d1fae5;
+        border-left: 4px solid #10b981;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 5px;
+      }
+      .order-details {
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+      .order-number {
+        font-size: 24px;
+        color: #10b981;
+        font-weight: bold;
+      }
+      .total {
+        font-size: 28px;
+        color: #10b981;
+        font-weight: bold;
+        text-align: right;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 30px;
+        color: #666;
+        font-size: 12px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background: #10b981;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>✅ Commande Validée</h1>
+      <p>MediDispositif</p>
+    </div>
+
+    <div class="content">
+      <h2>Bonjour {{ client_prenom }} {{ client_nom }},</h2>
+      
+      <div class="success-box">
+        <p><strong>Bonne nouvelle !</strong> Votre commande a été validée avec succès.</p>
+      </div>
+
+      <p>
+        Nous vous remercions pour votre confiance. Votre commande est maintenant
+        en cours de traitement.
+      </p>
+
+      <div class="order-details">
+        <div class="order-number">Commande #{{ numero_commande }}</div>
+        <p><strong>Date de commande:</strong> {{ date_commande }}</p>
+        <p><strong>Mode de paiement:</strong> {{ mode_paiement }}</p>
+        <p>
+          <strong>Montant total:</strong>
+          <span class="total">{{ montant_total }} FCFA</span>
+        </p>
+      </div>
+
+      <h3>Détails de votre commande</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Prix unitaire</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in lignes %}
+          <tr>
+            <td>{{ ligne.nom_produit }}</td>
+            <td>{{ ligne.quantite }}</td>
+            <td>{{ ligne.prix_unitaire }} FCFA</td>
+            <td>{{ ligne.montant }} FCFA</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <p><strong>Total:</strong> {{ montant_total }} FCFA</p>
+
+      <div class="footer">
+        <p>© 2026 MediDispositif. Tous droits réservés.</p>
+        <p>Pour toute question, contactez-nous à contact@medispositif.sn</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.db import models, transaction
 from django.db.models import Sum
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -217,6 +217,10 @@ class Commande(models.Model):
             defaults={'montant': self.montant_total},
         )
         print("Validation completed successfully")
+        
+        # Envoyer la notification de validation directement après la validation
+        print("Envoi notification de validation par email...")
+        envoyer_notification_validation(self)
 
     def annuler_commande(self, motif):
         """
@@ -234,6 +238,10 @@ class Commande(models.Model):
         self.statut = StatutCommande.ANNULEE
         self.motif_annulation = motif
         self.save(update_fields=['statut', 'motif_annulation'])
+        
+        # Envoyer la notification d'annulation directement après l'annulation
+        print("Envoi notification d'annulation par email...")
+        envoyer_notification_annulation(self)
 
 
 class LigneCommande(models.Model):
@@ -413,9 +421,9 @@ def envoyer_facture_email(instance):
             )
             
             print(f"Résultat de l'envoi d'email: {result}")
-            print(f"✅ Facture #{instance.numero} envoyée par email à {instance.commande.client.email}")
+            print(f"OK Facture #{instance.numero} envoyee par email a {instance.commande.client.email}")
         except Exception as e:
-            print(f"❌ Erreur lors de l'envoi de l'email pour la facture #{instance.numero}: {str(e)}")
+            print(f"ERREUR lors de l'envoi de l'email pour la facture #{instance.numero}: {str(e)}")
             import traceback
             traceback.print_exc()
 
@@ -424,3 +432,94 @@ def envoyer_facture_email(instance):
 def envoyer_facture_par_email(sender, instance, created, **kwargs):
     if created:
         envoyer_facture_email(instance)
+
+
+def envoyer_notification_validation(instance):
+    """
+    Envoie un email au client pour confirmer la validation de sa commande.
+    """
+    print(f"=== DEBUT ENVOI NOTIFICATION VALIDATION ===")
+    print(f"Commande ID: {instance.pk}")
+    print(f"Client: {instance.client}")
+    print(f"Client email: {instance.client.email}")
+    print(f"Client email existe: {bool(instance.client.email)}")
+    
+    if instance.client.email:
+        try:
+            context = {
+                'client_nom': instance.client.nom,
+                'client_prenom': instance.client.prenom,
+                'numero_commande': instance.pk,
+                'date_commande': instance.date_commande.strftime('%d/%m/%Y %H:%M'),
+                'montant_total': instance.montant_total,
+                'mode_paiement': instance.get_mode_paiement_display(),
+                'lignes': [
+                    {
+                        'nom_produit': ligne.produit.nom,
+                        'quantite': ligne.quantite,
+                        'prix_unitaire': ligne.prix_unitaire,
+                        'montant': ligne.montant,
+                    }
+                    for ligne in instance.lignes.all()
+                ],
+            }
+            
+            html_content = render_to_string('emails/validation_commande.html', context)
+            
+            print(f"Template HTML genere, longueur: {len(html_content)}")
+            print(f"Tentative d'envoi a: {instance.client.email}")
+            
+            result = send_mail(
+                subject=f'OK Votre commande #{instance.pk} a ete validee - MediDispositif',
+                message='Votre commande a été validée avec succès.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[instance.client.email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            
+            print(f"OK Notification de validation envoyee avec succes! Resultat: {result}")
+            print(f"=== FIN ENVOI NOTIFICATION VALIDATION ===")
+        except Exception as e:
+            print(f"ERREUR lors de l'envoi de notification de validation: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            print(f"=== FIN ENVOI NOTIFICATION VALIDATION (ERREUR) ===")
+    else:
+        print(f"ATTENTION Pas d'email client disponible pour la commande #{instance.pk}")
+        print(f"=== FIN ENVOI NOTIFICATION VALIDATION (PAS D'EMAIL) ===")
+
+
+def envoyer_notification_annulation(instance):
+    """
+    Envoie un email au client pour informer de l'annulation de sa commande.
+    """
+    if instance.client.email:
+        try:
+            context = {
+                'client_nom': instance.client.nom,
+                'client_prenom': instance.client.prenom,
+                'numero_commande': instance.pk,
+                'date_commande': instance.date_commande.strftime('%d/%m/%Y %H:%M'),
+                'montant_total': instance.montant_total,
+                'motif_annulation': instance.motif_annulation or "Non spécifié",
+            }
+            
+            html_content = render_to_string('emails/annulation_commande.html', context)
+            
+            print(f"Tentative d'envoi de notification d'annulation pour commande #{instance.pk} à {instance.client.email}")
+            
+            result = send_mail(
+                subject=f'ERREUR Votre commande #{instance.pk} a ete annulee - MediDispositif',
+                message='Votre commande a été annulée.',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[instance.client.email],
+                html_message=html_content,
+                fail_silently=False,
+            )
+            
+            print(f"OK Notification d'annulation envoyee a {instance.client.email}, resultat: {result}")
+        except Exception as e:
+            print(f"ERREUR lors de l'envoi de notification d'annulation pour commande #{instance.pk}: {str(e)}")
+            import traceback
+            traceback.print_exc()

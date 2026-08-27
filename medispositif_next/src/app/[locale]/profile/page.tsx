@@ -579,7 +579,7 @@ export default function ProfilePage() {
                       onClick={() => router.push(`/${locale}/dashboard/admin`)}
                       className="w-full"
                     >
-                      Créer un rapport
+                      Retour au tableau de bord
                     </Button>
                   </CardContent>
                 </Card>
@@ -609,7 +609,9 @@ export default function ProfilePage() {
                         disabled={loadingStats}
                         title="Rafraîchir les statistiques"
                       >
-                        <RefreshCw className={`h-4 w-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 ${loadingStats ? "animate-spin" : ""}`}
+                        />
                       </Button>
                     </div>
                   </CardHeader>
@@ -646,7 +648,9 @@ export default function ProfilePage() {
                         disabled={loadingStats}
                         title="Rafraîchir les statistiques"
                       >
-                        <RefreshCw className={`h-4 w-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                          className={`h-4 w-4 ${loadingStats ? "animate-spin" : ""}`}
+                        />
                       </Button>
                     </div>
                   </CardHeader>
