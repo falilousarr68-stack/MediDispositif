@@ -1,6 +1,11 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.core.files.base import ContentFile
+from django.http import FileResponse
+from django.template.loader import render_to_string
+from django.utils import timezone
+from datetime import date
 
 from authentication.models import Role
 from .models import ParametreSysteme, Rapport, TypeRapport
@@ -66,20 +71,34 @@ class RapportViewSet(viewsets.ModelViewSet):
         return RapportDetailSerializer
 
     def perform_create(self, serializer):
-        """Associe automatiquement l'utilisateur administrateur au rapport."""
-        print(f"User role: {self.request.user.role}")
-        print(f"User: {self.request.user}")
-        
-        if self.request.user.role != Role.ADMINISTRATEUR:
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Seuls les administrateurs peuvent créer des rapports.")
-        
-        print("Saving report with generated_by user")
-        serializer.save(genere_par=self.request.user)
-        print("Report saved successfully")
+        """Associe l'administrateur et génère le fichier détaillé des ventes."""
+        from ventes.models import Commande
+
+        rapport = serializer.save(
+            genere_par=self.request.user,
+            type_rapport=TypeRapport.VENTES,
+        )
+        commandes = Commande.objects.select_related('client').prefetch_related(
+            'lignes__produit'
+        ).all()
+        if rapport.periode_debut:
+            commandes = commandes.filter(date_commande__date__gte=rapport.periode_debut)
+        if rapport.periode_fin:
+            commandes = commandes.filter(date_commande__date__lte=rapport.periode_fin)
+
+        html = render_to_string('rapports/ventes.html', {
+            'rapport': rapport,
+            'commandes': commandes,
+            'total_commandes': commandes.count(),
+            'total_ventes': sum((commande.montant_total for commande in commandes), 0),
+            'date_generation': timezone.localtime(),
+        })
+        filename = f'rapport-ventes-{rapport.pk}.html'
+        rapport.chemin_acces.save(filename, ContentFile(html.encode('utf-8')), save=True)
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        queryset = queryset.filter(type_rapport=TypeRapport.VENTES)
 
         type_rapport = self.request.query_params.get('type')
         if type_rapport:
@@ -97,5 +116,17 @@ class RapportViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='types')
     def types_rapports(self, request):
         """Retourne la liste des types de rapports disponibles."""
-        types = [{'value': key, 'label': label} for key, label in TypeRapport.choices]
+        types = [{'value': TypeRapport.VENTES, 'label': TypeRapport.VENTES.label}]
         return Response(types)
+
+    @action(detail=True, methods=['get'], url_path='telecharger', permission_classes=[EstAdministrateur])
+    def telecharger(self, request, pk=None):
+        rapport = self.get_object()
+        if not rapport.chemin_acces:
+            return Response({'error': 'Aucun fichier n’est disponible pour ce rapport.'}, status=404)
+        rapport.chemin_acces.open('rb')
+        return FileResponse(
+            rapport.chemin_acces,
+            as_attachment=True,
+            filename=f'rapport-ventes-{rapport.pk}.html',
+        )

@@ -1,0 +1,106 @@
+@startuml DiagrammeCasUtilisation
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Client" as client
+actor "Administrateur" as admin
+actor "Responsable Commercial" as resp_com
+actor "Vendeur" as vendeur
+actor "Gestionnaire de Stock" as gest_stock
+
+rectangle "Système MediDispositif" {
+    package "Authentification" {
+        usecase "S'inscrire" as UC1
+        usecase "Se connecter" as UC2
+        usecase "Voir son profil" as UC3
+        usecase "Modifier son profil" as UC4
+    }
+    
+    package "Gestion Utilisateurs" {
+        usecase "Gérer les utilisateurs" as UC5
+        usecase "Créer un utilisateur" as UC6
+        usecase "Modifier un utilisateur" as UC7
+        usecase "Supprimer un utilisateur" as UC8
+        usecase "Lister les utilisateurs" as UC9
+    }
+    
+    package "Catalogue et Stock" {
+        usecase "Consulter les produits" as UC10
+        usecase "Rechercher des produits" as UC11
+        usecase "Gérer les catalogues" as UC12
+        usecase "Gérer les produits" as UC13
+        usecase "Créer un approvisionnement" as UC14
+        usecase "Ajouter détails approvisionnement" as UC15
+        usecase "Voir les statistiques produits" as UC16
+    }
+    
+    package "Commandes et Ventes" {
+        usecase "Gérer son panier" as UC17
+        usecase "Créer une commande" as UC18
+        usecase "Valider une commande" as UC19
+        usecase "Annuler une commande" as UC20
+        usecase "Voir ses commandes" as UC21
+        usecase "Enregistrer un paiement" as UC22
+        usecase "Générer une facture" as UC23
+    }
+    
+    package "Système" {
+        usecase "Gérer les paramètres système" as UC24
+        usecase "Générer des rapports" as UC25
+        usecase "Consulter les rapports" as UC26
+    }
+}
+
+' Relations Authentification
+client --> UC1
+client --> UC2
+client --> UC3
+client --> UC4
+admin --> UC2
+resp_com --> UC2
+vendeur --> UC2
+gest_stock --> UC2
+
+' Relations Gestion Utilisateurs
+admin --> UC5
+UC5 ..> UC6 : <<include>>
+UC5 ..> UC7 : <<include>>
+UC5 ..> UC8 : <<include>>
+UC5 ..> UC9 : <<include>>
+
+' Relations Catalogue et Stock
+client --> UC10
+client --> UC11
+admin --> UC10
+resp_com --> UC10
+vendeur --> UC10
+gest_stock --> UC12
+gest_stock --> UC13
+gest_stock --> UC14
+UC14 ..> UC15 : <<include>>
+admin --> UC16
+
+' Relations Commandes et Ventes
+client --> UC17
+client --> UC18
+client --> UC21
+vendeur --> UC18
+resp_com --> UC18
+resp_com --> UC19
+resp_com --> UC20
+client --> UC20 : <<extend>>
+vendeur --> UC22
+resp_com --> UC22
+vendeur --> UC23
+resp_com --> UC23
+
+' Relations Système
+admin --> UC24
+admin --> UC25
+admin --> UC26
+resp_com --> UC26
+vendeur --> UC26
+gest_stock --> UC26
+client --> UC26
+
+@enduml

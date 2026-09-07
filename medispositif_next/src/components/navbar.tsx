@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useCart } from "@/hooks/use-cart";
+import { ConsomcareLogoText } from "@/components/logo";
 import {
   Moon,
   Sun,
@@ -64,8 +65,7 @@ export function Navbar() {
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href={`/${locale}`} className="flex items-center space-x-2">
-          <span className="text-2xl">🏥</span>
-          <span className="font-bold text-xl">MediDispositif</span>
+          <ConsomcareLogoText />
         </Link>
 
         <div className="flex items-center space-x-4">

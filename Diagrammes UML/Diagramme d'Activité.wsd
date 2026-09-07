@@ -1,0 +1,103 @@
+@startuml DiagrammeActivite
+
+skinparam activity {
+    BackgroundColor #F8F9FA
+    BorderColor #2C3E50
+    FontColor #2C3E50
+}
+
+skinparam swimlaneBorderColor #2C3E50
+
+|Client|
+start
+:Connexion au système;
+if (Déjà inscrit?) then (non)
+    :Inscription;
+    :Remplir formulaire d'inscription;
+    :Valider l'inscription;
+endif
+:Accéder au catalogue;
+
+repeat
+    :Rechercher/Consulter les produits;
+    :Ajouter au panier;
+repeat while (Continuer achats?) is (oui)
+-> (non);
+
+:Vérifier le panier;
+if (Valider panier?) then (oui)
+    :Créer commande depuis panier;
+    :Saisir informations de livraison;
+    :Confirmer commande;
+    
+    |Responsable Commercial|
+    :Recevoir notification commande;
+    if (Stock disponible?) then (oui)
+        :Valider la commande;
+        :Décrémenter stock produits;
+        :Envoyer confirmation client;
+        
+        |Vendeur|
+        :Enregistrer paiement;
+        :Choisir mode de paiement;
+        :Valider paiement;
+        :Générer facture;
+        :Envoyer facture client;
+        
+        |Client|
+        :Recevoir confirmation et facture;
+    else (non)
+        :Contacter client pour alternatives;
+        :Proposer alternatives ou annulation;
+        
+        |Client|
+        if (Accepter alternatives?) then (oui)
+            :Modifier commande;
+        else (non)
+            :Demander annulation;
+            
+            |Responsable Commercial|
+            :Demander motif annulation;
+            :Valider annulation;
+            :Remettre stock en place;
+            :Envoyer notification annulation;
+            
+            |Client|
+            :Recevoir notification annulation;
+        endif
+    endif
+else (non)
+    :Modifier panier;
+    :Continuer achats;
+endif
+
+|Gestionnaire de Stock|
+:Surveiller stock;
+if (Stock faible?) then (oui)
+    :Créer approvisionnement;
+    :Sélectionner fournisseurs;
+    :Ajouter détails approvisionnement;
+    :Valider approvisionnement;
+    :Incrémenter stock produits;
+endif
+
+|Administrateur|
+:Gérer utilisateurs;
+:Créer/Modifier/Supprimer utilisateurs;
+:Gérer paramètres système;
+:Générer rapports périodiques;
+:Consulter statistiques produits;
+:Voir diagrammes ventes vs stock;
+
+|Tous les utilisateurs|
+:Consulter rapports disponibles;
+:Télécharger rapports;
+
+|Client|
+:Accéder profil;
+:Modifier informations personnelles;
+:Voir historique commandes;
+
+stop
+
+@enduml

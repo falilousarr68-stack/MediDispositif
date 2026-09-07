@@ -1,0 +1,206 @@
+@startuml DiagrammeClasse
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor White
+    ArrowColor #2C3E50
+    BorderColor #2C3E50
+}
+
+package "Authentication" {
+    enum Role {
+        ADMINISTRATEUR
+        RESPONSABLE_COMMERCIAL
+        VENDEUR
+        CLIENT
+        GESTIONNAIRE_STOCK
+    }
+    
+    class Utilisateur {
+        - idUser : Integer
+        - email : String
+        - password : String
+        - nom : String
+        - prenom : String
+        - role : Role
+        - telephone : String
+        - adresse : String
+        - is_active : Boolean
+        - is_staff : Boolean
+        - is_superuser : Boolean
+        - date_joined : DateTime
+        + create_user(email, password, **extra_fields)
+        + create_superuser(email, password, **extra_fields)
+    }
+    
+    class UtilisateurManager {
+        + create_user(email, password, **extra_fields)
+        + create_superuser(email, password, **extra_fields)
+    }
+    
+    UtilisateurManager ..> Utilisateur : manages
+}
+
+package "Catalogue" {
+    class Catalogue {
+        - idCatalogue : Integer
+        - nom : String
+        + getCatalogue() : String
+    }
+    
+    class ProduitMedical {
+        - idProduit : Integer
+        - catalogue : Catalogue
+        - nom : String
+        - description : String
+        - prix : Decimal
+        - stock : Integer
+        - image : ImageField
+        + getProduit() : String
+    }
+    
+    class Approvisionnement {
+        - idApp : Integer
+        - date_app : Date
+        - quantite_produit : Integer
+        + recalculer_quantite_totale()
+    }
+    
+    class DetailsApprovisionnement {
+        - idDetailApp : Integer
+        - approvisionnement : Approvisionnement
+        - produit : ProduitMedical
+        - quantite : Integer
+        - prix_unitaire_achat : Decimal
+        - montant : Decimal
+        - date_peremption : Date
+        - numero_lot : String
+        + save(*args, **kwargs)
+        + delete(*args, **kwargs)
+    }
+}
+
+package "Ventes" {
+    enum StatutCommande {
+        EN_COURS
+        VALIDEE
+        ANNULEE
+    }
+    
+    enum ModePaiement {
+        ESPECES
+        CARTE
+        MOBILE_MONEY
+        CHEQUE
+    }
+    
+    class Panier {
+        - idPanier : Integer
+        - client : Utilisateur
+        - date_creation : DateTime
+        - date_modification : DateTime
+        + calculer_total() : Decimal
+        + vider_panier()
+    }
+    
+    class LignePanier {
+        - idLignePanier : Integer
+        - panier : Panier
+        - produit : ProduitMedical
+        - quantite : Integer
+        + save(*args, **kwargs)
+    }
+    
+    class Commande {
+        - idCommande : Integer
+        - client : Utilisateur
+        - date_commande : DateTime
+        - montant_total : Decimal
+        - statut : StatutCommande
+        - motif_annulation : String
+        + calculer_montant_total()
+        + valider_commande()
+        + annuler_commande(motif)
+        + envoyer_confirmation_email()
+    }
+    
+    class LigneCommande {
+        - idLigneCommande : Integer
+        - commande : Commande
+        - produit : ProduitMedical
+        - quantite : Integer
+        - prix_unitaire : Decimal
+        - montant : Decimal
+        + save(*args, **kwargs)
+        + delete(*args, **kwargs)
+    }
+    
+    class Paiement {
+        - idPaiement : Integer
+        - commande : Commande
+        - montant : Decimal
+        - date_paiement : DateTime
+        - mode_paiement : ModePaiement
+        + envoyer_confirmation_paiement()
+    }
+    
+    class Facture {
+        - numero : String
+        - commande : Commande
+        - date_emission : Date
+        - montant : Decimal
+        + generer_numero()
+        + generer_pdf()
+    }
+}
+
+package "Systeme" {
+    enum TypeRapport {
+        VENTES
+        STOCK
+        APPROVISIONNEMENTS
+        PAIEMENTS
+        FACTURES
+        CLIENTS
+    }
+    
+    class ParametreSysteme {
+        - nom : String
+        - valeur : String
+        - description : String
+        - date_modification : DateTime
+    }
+    
+    class Rapport {
+        - idRapport : Integer
+        - titre : String
+        - date_generation : DateTime
+        - type_rapport : TypeRapport
+        - chemin_acces : File
+        - periode_debut : Date
+        - periode_fin : Date
+        - genere_par : Utilisateur
+        - commentaires : String
+        + generer_contenu()
+        + exporter_pdf()
+    }
+}
+
+' Relations entre classes
+Catalogue "1" -- "*" ProduitMedical : contient
+Approvisionnement "1" -- "*" DetailsApprovisionnement : contient
+ProduitMedical "1" -- "*" DetailsApprovisionnement : approvisionné par
+Utilisateur "1" -- "*" Panier : possède
+Panier "1" -- "*" LignePanier : contient
+ProduitMedical "1" -- "*" LignePanier : dans
+Utilisateur "1" -- "*" Commande : passe
+Commande "1" -- "*" LigneCommande : contient
+ProduitMedical "1" -- "*" LigneCommande : commandé dans
+Commande "1" -- "*" Paiement : reçoit
+Commande "1" -- "1" Facture : génère
+Utilisateur "1" -- "*" Rapport : génère
+Utilisateur -- Role : a pour
+Commande -- StatutCommande : a pour
+Paiement -- ModePaiement : a pour
+Rapport -- TypeRapport : a pour
+
+@enduml

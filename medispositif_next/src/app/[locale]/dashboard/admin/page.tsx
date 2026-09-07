@@ -76,9 +76,27 @@ export default function AdminDashboardPage() {
   const cancelOrderMutation = useCancelOrder();
   const createReportMutation = useCreateReport();
 
+  const downloadReport = async (reportId: number) => {
+    try {
+      const response = await api.get(
+        `api/systeme/rapports/${reportId}/telecharger/`,
+        { responseType: "blob" }
+      );
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `rapport-ventes-${reportId}.html`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error downloading report:", error);
+      toast.error("Impossible de télécharger le rapport");
+    }
+  };
+
   // Données migrées vers useState/useEffect (données simples)
-  const [reportTypes, setReportTypes] = useState<any[]>([]);
-  const [loadingReportTypes, setLoadingReportTypes] = useState(false);
 
   // États locaux
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -91,23 +109,6 @@ export default function AdminDashboardPage() {
     );
     router.push(`/${newLocale}${pathWithoutLocale || "/"}`);
   };
-
-  // Récupérer les types de rapports avec useEffect
-  useEffect(() => {
-    const fetchReportTypes = async () => {
-      setLoadingReportTypes(true);
-      try {
-        const response = await api.get("api/systeme/rapports/types/");
-        setReportTypes(response.data);
-      } catch (error) {
-        console.error("Error fetching report types:", error);
-      } finally {
-        setLoadingReportTypes(false);
-      }
-    };
-
-    fetchReportTypes();
-  }, []);
 
   useEffect(() => {
     if (activeSection === "paiements") {
@@ -480,7 +481,10 @@ export default function AdminDashboardPage() {
                                 Statut: {order.statut || order.status}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Mode de paiement: {order.mode_paiement_display || order.mode_paiement || "Non spécifié"}
+                                Mode de paiement:{" "}
+                                {order.mode_paiement_display ||
+                                  order.mode_paiement ||
+                                  "Non spécifié"}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 Total: {order.montant_total || order.total} FCFA
@@ -665,25 +669,20 @@ export default function AdminDashboardPage() {
                     Total des rapports: {reports?.length || 0}
                   </p>
 
-                  {reportTypes && reportTypes.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">
-                        Types de rapports disponibles:
-                      </h3>
-                      {reportTypes.map((type: any) => (
-                        <div key={type.value} className="p-2 bg-muted rounded">
-                          {type.label}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="font-medium">Type de rapport : Ventes</p>
+                    <p className="text-sm text-muted-foreground">
+                      Chaque fichier contient le détail des commandes, clients,
+                      produits, quantités, paiements et montants.
+                    </p>
+                  </div>
 
                   {reports && reports.length > 0 && (
                     <div className="space-y-2 mt-4">
                       <h3 className="font-semibold">Rapports récents:</h3>
                       {reports.slice(0, 5).map((report: any) => (
                         <div
-                          key={report.id}
+                          key={report.idRapport}
                           className="p-3 bg-muted rounded-lg"
                         >
                           <p className="font-medium">{report.titre}</p>
@@ -693,6 +692,15 @@ export default function AdminDashboardPage() {
                           <p className="text-sm text-muted-foreground">
                             Date: {report.date_generation}
                           </p>
+                          {report.chemin_acces_url && (
+                            <button
+                              type="button"
+                              onClick={() => downloadReport(report.idRapport)}
+                              className="mt-2 inline-block text-sm font-medium text-primary hover:underline"
+                            >
+                              Télécharger le rapport
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -701,12 +709,10 @@ export default function AdminDashboardPage() {
                   <Button
                     className="w-full"
                     onClick={() => {
-                      // Example of creating a report
                       createReportMutation
                         .mutateAsync({
-                          titre: "Rapport de test",
+                          titre: `Rapport des ventes - ${new Date().toLocaleDateString("fr-FR")}`,
                           type_rapport: "Ventes",
-                          commentaires: "Rapport généré par l'administrateur",
                         })
                         .then(() => toast.success("Rapport créé"))
                         .catch(error => {
@@ -716,7 +722,9 @@ export default function AdminDashboardPage() {
                     }}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Créer un nouveau rapport
+                    {createReportMutation.isPending
+                      ? "Génération en cours..."
+                      : "Créer un rapport des ventes"}
                   </Button>
                 </div>
               </CardContent>

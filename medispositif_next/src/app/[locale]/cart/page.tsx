@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useLocale } from "next-intl";
@@ -16,12 +15,6 @@ const ShoppingCart = dynamic(
   { ssr: false }
 );
 const Trash2 = dynamic(() => import("lucide-react").then(mod => mod.Trash2), {
-  ssr: false,
-});
-const Plus = dynamic(() => import("lucide-react").then(mod => mod.Plus), {
-  ssr: false,
-});
-const Minus = dynamic(() => import("lucide-react").then(mod => mod.Minus), {
   ssr: false,
 });
 const ArrowRight = dynamic(
@@ -38,7 +31,6 @@ export default function CartPage() {
   const {
     items,
     removeItem,
-    updateQuantity,
     clearCart,
     getTotalItems,
     getTotalPrice,
@@ -145,82 +137,11 @@ export default function CartPage() {
                           </div>
 
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => {
-                                  console.log(
-                                    "Decreasing quantity for product:",
-                                    productId,
-                                    "current:",
-                                    item.quantity
-                                  );
-                                  if (item.quantity > 1) {
-                                    const newQuantity = item.quantity - 1;
-                                    console.log(
-                                      "New quantity will be:",
-                                      newQuantity
-                                    );
-                                    updateQuantity(
-                                      String(productId),
-                                      newQuantity
-                                    );
-                                  } else {
-                                    console.log(
-                                      "Cannot decrease: quantity is already 1"
-                                    );
-                                  }
-                                }}
-                                disabled={item.quantity <= 1}
-                                type="button"
-                                aria-label="Decrease quantity"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <Input
-                                type="text"
-                                value={item.quantity}
-                                readOnly
-                                className="w-20 text-center"
-                                min="1"
-                                max={item.product.stock}
-                                aria-label="Quantity"
-                              />
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => {
-                                  console.log(
-                                    "Increasing quantity for product:",
-                                    productId,
-                                    "current:",
-                                    item.quantity,
-                                    "stock:",
-                                    item.product.stock
-                                  );
-                                  if (item.quantity < item.product.stock) {
-                                    const newQuantity = item.quantity + 1;
-                                    console.log(
-                                      "New quantity will be:",
-                                      newQuantity
-                                    );
-                                    updateQuantity(
-                                      String(productId),
-                                      newQuantity
-                                    );
-                                  } else {
-                                    console.log(
-                                      "Cannot increase: quantity at stock limit"
-                                    );
-                                  }
-                                }}
-                                disabled={item.quantity >= item.product.stock}
-                                type="button"
-                                aria-label="Increase quantity"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
+                            <div className="text-sm text-muted-foreground">
+                              Quantité :{" "}
+                              <span className="font-semibold text-foreground">
+                                {item.quantity}
+                              </span>
                             </div>
 
                             <div className="text-right">

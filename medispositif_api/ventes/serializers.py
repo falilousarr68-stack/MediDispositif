@@ -82,11 +82,23 @@ class PanierSerializer(serializers.ModelSerializer):
 class AjouterAuPanierSerializer(serializers.Serializer):
     """Serializer pour ajouter un produit au panier."""
 
-    idProduit = serializers.PrimaryKeyRelatedField(
-        queryset=ProduitMedical.objects.all(),
-        source='produit',
-    )
+    idProduit = serializers.IntegerField()
     quantite = serializers.IntegerField(default=1, min_value=1, max_value=100)
+
+    def validate_idProduit(self, value):
+        """Valide que le produit existe et le retourne."""
+        try:
+            produit = ProduitMedical.objects.get(pk=value)
+            return produit
+        except ProduitMedical.DoesNotExist:
+            raise serializers.ValidationError('Produit non trouvé')
+
+    def to_internal_value(self, data):
+        """Surcharge pour garantir que idProduit est converti en produit."""
+        data = super().to_internal_value(data)
+        if 'idProduit' in data:
+            data['produit'] = data['idProduit']
+        return data
 
     class Meta:
         fields = ['idProduit', 'quantite']

@@ -412,7 +412,7 @@ def envoyer_facture_email(instance):
             print(f"Configuration EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
             
             result = send_mail(
-                subject=f'Votre facture #{instance.numero} - MediDispositif',
+                subject=f'Votre facture #{instance.numero} - CONSOMCARE',
                 message='Votre facture est disponible en pièce jointe.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[instance.commande.client.email],
@@ -470,7 +470,7 @@ def envoyer_notification_validation(instance):
             print(f"Tentative d'envoi a: {instance.client.email}")
             
             result = send_mail(
-                subject=f'OK Votre commande #{instance.pk} a ete validee - MediDispositif',
+                subject=f'OK Votre commande #{instance.pk} a ete validee - CONSOMCARE',
                 message='Votre commande a été validée avec succès.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[instance.client.email],
@@ -510,7 +510,7 @@ def envoyer_notification_annulation(instance):
             print(f"Tentative d'envoi de notification d'annulation pour commande #{instance.pk} à {instance.client.email}")
             
             result = send_mail(
-                subject=f'ERREUR Votre commande #{instance.pk} a ete annulee - MediDispositif',
+                subject=f'ERREUR Votre commande #{instance.pk} a ete annulee - CONSOMCARE',
                 message='Votre commande a été annulée.',
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[instance.client.email],

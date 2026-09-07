@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ rapport.titre }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        color: #1f2937;
+        margin: 32px;
+      }
+      h1 {
+        color: #166534;
+        margin-bottom: 4px;
+      }
+      h2 {
+        border-bottom: 2px solid #166534;
+        padding-bottom: 6px;
+      }
+      .meta,
+      .summary {
+        background: #f0fdf4;
+        padding: 14px;
+        margin: 18px 0;
+      }
+      .summary {
+        display: flex;
+        gap: 48px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 28px;
+      }
+      th,
+      td {
+        border: 1px solid #d1d5db;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #dcfce7;
+      }
+      .amount {
+        text-align: right;
+      }
+      @media print {
+        body {
+          margin: 12px;
+        }
+        .order {
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ rapport.titre }}</h1>
+    <div class="meta">
+      <div><strong>Type :</strong> Rapport des ventes</div>
+      <div>
+        <strong>Généré le :</strong> {{ date_generation|date:"d/m/Y H:i" }}
+      </div>
+      {% if rapport.periode_debut %}
+      <div><strong>Du :</strong> {{ rapport.periode_debut|date:"d/m/Y" }}</div>
+      {% endif %} {% if rapport.periode_fin %}
+      <div><strong>Au :</strong> {{ rapport.periode_fin|date:"d/m/Y" }}</div>
+      {% endif %}
+    </div>
+    <div class="summary">
+      <div><strong>{{ total_commandes }}</strong><br />commandes</div>
+      <div>
+        <strong>{{ total_ventes|floatformat:2 }} FCFA</strong><br />chiffre
+        d'affaires
+      </div>
+    </div>
+    {% for commande in commandes %}
+    <section class="order">
+      <h2>Commande #{{ commande.pk }}</h2>
+      {% with client=commande.client %}
+      <p>
+        <strong>Client :</strong>
+        <span>{{ client.prenom }}</span>
+        <span>{{ client.nom }}</span>
+        (<span>{{ client.email }}</span>)
+      </p>
+      <p>
+        <strong>Date :</strong> {{ commande.date_commande|date:"d/m/Y H:i" }}
+        &nbsp; <strong>Statut :</strong> {{ commande.get_statut_display }}
+        &nbsp; <strong>Paiement :</strong>
+        {% with paiement=commande.get_mode_paiement_display %}
+        <span>{{ paiement }}</span>
+        {% endwith %}
+      </p>
+      {% endwith %}
+      <table>
+        <thead>
+          <tr>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Prix unitaire</th>
+            <th class="amount">Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ligne in commande.lignes.all %}
+          <tr>
+            <td>{{ ligne.produit.nom }}</td>
+            <td>{{ ligne.quantite }}</td>
+            <td>{{ ligne.prix_unitaire|floatformat:2 }} FCFA</td>
+            <td class="amount">{{ ligne.montant|floatformat:2 }} FCFA</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="amount">
+        <strong
+          >Total commande : {{ commande.montant_total|floatformat:2 }}
+          FCFA</strong
+        >
+      </p>
+    </section>
+    {% empty %}
+    <p>Aucune vente pour la période sélectionnée.</p>
+    {% endfor %}
+  </body>
+</html>

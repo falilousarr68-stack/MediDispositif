@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView, 
 from rest_framework.permissions import IsAuthenticated
 
 from authentication.models import Role
+from catalogue.models import ProduitMedical
 from .models import (
     Commande,
     Facture,
@@ -319,6 +320,36 @@ class PanierViewSet(viewsets.ModelViewSet):
         
         produit = serializer.validated_data['produit']
         quantite = serializer.validated_data['quantite']
+        
+        # Récupérer ou créer le panier
+        panier, _ = Panier.objects.get_or_create(client=request.user)
+        
+        # Vérifier le stock
+        if produit.stock < quantite:
+            return Response(
+                {'error': f'Stock insuffisant. Stock disponible: {produit.stock}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Ajouter ou mettre à jour la ligne de panier
+        ligne, created = LignePanier.objects.get_or_create(
+            panier=panier,
+            produit=produit,
+            defaults={'quantite': quantite}
+        )
+        
+        if not created:
+            nouvelle_quantite = ligne.quantite + quantite
+            if nouvelle_quantite > produit.stock:
+                return Response(
+                    {'error': f'Stock insuffisant. Stock disponible: {produit.stock}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            ligne.quantite = nouvelle_quantite
+            ligne.save()
+        
+        serializer = PanierSerializer(panier)
+        return Response(serializer.data, status=status.HTTP_200_OK)
         
         # Récupérer ou créer le panier
         panier, _ = Panier.objects.get_or_create(client=request.user)

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-labelledby="title desc">
+  <title id="title">Consomcare</title>
+  <desc id="desc">Logo médical Consomcare avec croix, signal cardiaque et feuille</desc>
+  <defs>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d7a17" />
+      <stop offset="1" stop-color="#8bcf18" />
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#064b9b" />
+      <stop offset="1" stop-color="#16a9e8" />
+    </linearGradient>
+    <clipPath id="mark">
+      <circle cx="100" cy="100" r="88" />
+    </clipPath>
+  </defs>
+  <circle cx="100" cy="100" r="94" fill="#fff" stroke="#d7e8ef" stroke-width="2" />
+  <g clip-path="url(#mark)">
+    <path d="M19 43c27-31 75-44 118-27 28 11 45 31 52 57-20-28-48-43-79-43-34 0-62 14-91 43z" fill="url(#blue)" />
+    <path d="M12 153c25 27 58 39 91 35 32-4 57-22 73-50-24 15-47 22-70 22-34 0-64-14-94-43z" fill="url(#blue)" />
+    <path d="M101 16c49 0 87 36 87 84 0 45-34 85-82 89 28-19 45-46 45-78 0-39-21-72-50-95z" fill="url(#green)" />
+    <path d="M31 105c0-42 29-75 69-86-29 20-45 47-45 78 0 39 21 72 51 93-44-6-75-40-75-85z" fill="#f8fff7" opacity=".9" />
+    <path d="M91 39h20v49h49v20h-49v49H91v-49H42V88h49z" fill="url(#green)" stroke="#fff" stroke-width="3" stroke-linejoin="round" />
+    <path d="M43 99h27l7-15 11 30 8-16h22l7-14 9 29 8-14h22" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M124 143c18-1 30 8 38 21-20 3-34-2-43-15 2-3 3-4 5-6z" fill="#5da914" />
+    <path d="M119 151c-1-16 7-27 20-36 2 17-4 29-17 37z" fill="#2d8d1b" />
+  </g>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="#fff" stroke-width="4" />
+</svg>

@@ -196,10 +196,16 @@ export const useCreatePayment = () => {
         mobile_money: "MobileMoney",
         check: "Cheque",
       };
-      const modePaiement = paymentModes[String(paymentData.method)] || "Especes";
-      
-      console.log("Creating payment with method:", paymentData.method, "converted to:", modePaiement);
-      
+      const modePaiement =
+        paymentModes[String(paymentData.method)] || "Especes";
+
+      console.log(
+        "Creating payment with method:",
+        paymentData.method,
+        "converted to:",
+        modePaiement
+      );
+
       const response = await api.post("api/ventes/paiements/", {
         idCommande: paymentData.order,
         montant: paymentData.amount,
@@ -251,7 +257,7 @@ export const useReports = () => {
     queryKey: ["reports"],
     queryFn: async () => {
       const response = await api.get("api/systeme/rapports/");
-      return response.data;
+      return response.data.results || response.data;
     },
   });
 };

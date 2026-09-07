@@ -106,6 +106,7 @@ export const useCart = create<CartStore>()(
               "productId:",
               productId
             );
+            // N'envoyer que idProduit et quantite, pas l'objet produit complet
             const response = await api.post("api/ventes/panier/ajouter/", {
               idProduit: productId,
               quantite: quantity,
@@ -225,11 +226,13 @@ export const useCart = create<CartStore>()(
               "Tentative de suppression via API avec endpoint:",
               `api/ventes/panier/supprimer/${productId}/`
             );
-            await api.delete(`api/ventes/panier/supprimer/${productId}/`);
+            const response = await api.delete(
+              `api/ventes/panier/supprimer/${productId}/`
+            );
             console.log("Produit supprimé avec succès");
 
-            const response = await api.get("api/ventes/panier/");
-            console.log("Réponse panier après suppression:", response.data);
+            // Recharger le panier depuis le serveur pour s'assurer de la synchronisation
+            await get().loadCartFromServer();
 
             if (response.data && response.data.lignes) {
               const cartItems = response.data.lignes.map((ligne: any) => ({
@@ -283,11 +286,11 @@ export const useCart = create<CartStore>()(
         } else {
           // Utiliser localStorage si l'utilisateur n'est pas connecté
           console.log("Utilisation de localStorage pour la suppression");
-          set({
-            items: get().items.filter(item => {
-              return String(item.product.idProduit) !== productId;
-            }),
+          const filteredItems = get().items.filter(item => {
+            return String(item.product.idProduit) !== productId;
           });
+          set({ items: filteredItems });
+          console.log("Panier localStorage après suppression:", filteredItems);
           toast.success("Produit retiré", {
             description: "🗑️ Produit retiré du panier",
           });
@@ -326,29 +329,8 @@ export const useCart = create<CartStore>()(
             );
             console.log("Réponse API:", response.data);
 
-            const cartResponse = await api.get("api/ventes/panier/");
-            console.log("Réponse panier:", cartResponse.data);
-
-            if (cartResponse.data && cartResponse.data.lignes) {
-              const cartItems = cartResponse.data.lignes.map((ligne: any) => ({
-                product: {
-                  id: ligne.idProduit, // Utiliser idProduit comme ID principal
-                  idProduit: ligne.idProduit,
-                  nom: ligne.nom_produit,
-                  name: ligne.nom_produit,
-                  nom_catalogue: ligne.nom_catalogue,
-                  category: ligne.nom_catalogue,
-                  image: buildImageUrl(ligne.image),
-                  prix: ligne.prix_unitaire,
-                  price: ligne.prix_unitaire,
-                  stock: ligne.stock,
-                },
-                quantity: ligne.quantite,
-              }));
-              set({ items: cartItems });
-              console.log("Panier mis à jour avec succès:", cartItems);
-              get().forceUpdate(); // Force le re-render
-            }
+            // Recharger le panier depuis le serveur pour s'assurer de la synchronisation
+            await get().loadCartFromServer();
 
             console.log(
               "✅ Quantité mise à jour via API:",

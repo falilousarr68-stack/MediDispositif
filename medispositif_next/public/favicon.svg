@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e40af" stop-opacity="1" />
+      <stop offset="100%" stop-color="#0ea5e9" stop-opacity="1" />
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.1)" />
+    </pattern>
+  </defs>
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" />
+  <circle cx="100" cy="100" r="95" fill="url(#dots)" />
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#10b981" stroke-width="3" />
+  <circle cx="100" cy="100" r="80" fill="none" stroke="#3b82f6" stroke-width="2" />
+  <path d="M30 100 Q20 80 35 70 Q50 60 65 75 Q55 85 45 95 Q35 105 30 100" fill="#22c55e" opacity="0.8" />
+  <path d="M170 100 Q180 80 165 65 Q150 55 135 70 Q145 85 155 95 Q165 105 170 100" fill="#22c55e" opacity="0.8" />
+  <path d="M175 85 Q185 70 170 55 Q155 45 140 60 Q150 75 160 80 Q170 90 175 85" fill="#16a34a" opacity="0.6" />
+  <rect x="85" y="30" width="30" height="140" rx="5" fill="#10b981" />
+  <rect x="30" y="85" width="140" height="30" rx="5" fill="#10b981" />
+  <path d="M50 100 L70 100 L75 85 L85 115 L90 100 L110 100 L115 85 L125 115 L130 100 L150 100" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="100" cy="100" r="5" fill="#ef4444" />
+</svg>

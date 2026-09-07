@@ -39,7 +39,7 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'falilousarr68@gmail.com')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'cwrq dhvo socl awuq')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'falilousarr68@gmail.com')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-EMAIL_SUBJECT_PREFIX = '[MediDispositif] '
+EMAIL_SUBJECT_PREFIX = '[CONSOMCARE] '
 
 
 # Application definition

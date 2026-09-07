@@ -1,6 +1,8 @@
-# MediDispositif API
+# CONSOMCARE API
 
 API REST pour la gestion de vente de dispositifs médicaux développée par les étudiants en Licence 3 Informatique : **Falilou Sarr** et **Ousmane Fall**, sous la direction de **Monsieur Modou Gueye**.
+
+**CONSOMCARE SARL** - Mieux s'équiper pour mieux soigner. Parce que chaque soin compte.
 
 ## 📋 Table des matières
 

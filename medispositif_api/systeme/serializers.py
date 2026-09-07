@@ -44,6 +44,7 @@ class RapportListSerializer(serializers.ModelSerializer):
     )
     genere_par_nom = serializers.CharField(source='genere_par.get_full_name', read_only=True)
     nom_fichier = serializers.CharField(source='chemin_acces', read_only=True)
+    chemin_acces_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Rapport
@@ -57,7 +58,15 @@ class RapportListSerializer(serializers.ModelSerializer):
             'periode_fin',
             'genere_par_nom',
             'nom_fichier',
+            'chemin_acces_url',
         ]
+
+    def get_chemin_acces_url(self, obj):
+        if obj.chemin_acces:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.chemin_acces.url)
+        return None
 
 
 class RapportDetailSerializer(serializers.ModelSerializer):
@@ -121,6 +130,10 @@ class RapportCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Valide la cohérence des dates de période."""
+        if data.get('type_rapport', TypeRapport.VENTES) != TypeRapport.VENTES:
+            raise serializers.ValidationError(
+                {'type_rapport': 'Seuls les rapports de ventes sont disponibles.'}
+            )
         periode_debut = data.get('periode_debut')
         periode_fin = data.get('periode_fin')
 
