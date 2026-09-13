@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useOrders,
   useValidateOrder,
-  useCreatePayment,
-  useGenerateInvoice,
   useOrdersByStatus,
   useRecentOrders,
 } from "@/hooks/use-sales";
@@ -14,7 +13,6 @@ import { Order } from "@/types";
 import { OrderTable } from "@/components/sales/order-table";
 import { OrderDetailsCard } from "@/components/sales/order-details-card";
 import { ValidateOrderModal } from "@/components/sales/validate-order-modal";
-import { PaymentModal } from "@/components/sales/payment-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -31,6 +29,7 @@ import { useLocale } from "next-intl";
 export default function VendorDashboardPage() {
   const t = useTranslations("sales");
   const locale = useLocale();
+  const queryClient = useQueryClient();
 
   const { data: orders, isLoading } = useOrders();
   const { data: pendingOrders } = useOrdersByStatus("pending");
@@ -38,26 +37,14 @@ export default function VendorDashboardPage() {
   const { data: recentOrders } = useRecentOrders(10);
 
   const validateOrder = useValidateOrder();
-  const createPayment = useCreatePayment();
-  const generateInvoice = useGenerateInvoice();
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [validateModalOpen, setValidateModalOpen] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const handleValidate = (order: Order) => {
     setSelectedOrder(order);
     setValidateModalOpen(true);
-  };
-
-  const handleRecordPayment = (order: Order) => {
-    setSelectedOrder(order);
-    setPaymentModalOpen(true);
-  };
-
-  const handleGenerateInvoice = (order: Order) => {
-    generateInvoice.mutate(order.id);
   };
 
   const handleViewDetails = (order: Order) => {
@@ -183,8 +170,6 @@ export default function VendorDashboardPage() {
               orders={pendingOrders}
               onViewDetails={handleViewDetails}
               onValidate={handleValidate}
-              onRecordPayment={handleRecordPayment}
-              onGenerateInvoice={handleGenerateInvoice}
             />
           ) : (
             <Card>
@@ -203,8 +188,6 @@ export default function VendorDashboardPage() {
               orders={recentOrders}
               onViewDetails={handleViewDetails}
               onValidate={handleValidate}
-              onRecordPayment={handleRecordPayment}
-              onGenerateInvoice={handleGenerateInvoice}
             />
           )}
         </div>
@@ -231,19 +214,19 @@ export default function VendorDashboardPage() {
           order={selectedOrder}
           open={validateModalOpen}
           onOpenChange={setValidateModalOpen}
-          onConfirm={(order) =>
-            validateOrder.mutate({ id: order.id })
-          }
-        />
-
-        {/* Payment Modal */}
-        <PaymentModal
-          order={selectedOrder}
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          onConfirm={(order, data) =>
-            createPayment.mutate({ ...data, order: order.id })
-          }
+          onConfirm={(order) => {
+            validateOrder.mutate(
+              { id: order.id },
+              {
+                onSuccess: () => {
+                  // Refetch manuel pour mise à jour immédiate
+                  queryClient.invalidateQueries({ queryKey: ["orders"] });
+                  queryClient.invalidateQueries({ queryKey: ["orders", "status"] });
+                  queryClient.invalidateQueries({ queryKey: ["recent-orders"] });
+                },
+              }
+            );
+          }}
         />
       </motion.div>
     </div>

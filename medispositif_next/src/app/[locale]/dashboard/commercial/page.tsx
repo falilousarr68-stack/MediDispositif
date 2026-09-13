@@ -2,12 +2,11 @@
 
 import React, { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useOrders,
   useValidateOrder,
   useCancelOrder,
-  useGenerateInvoice,
-  useCreatePayment,
   useSalesStats,
   useOrdersByStatus,
   useRecentOrders,
@@ -17,7 +16,6 @@ import { OrderTable } from "@/components/sales/order-table";
 import { OrderDetailsCard } from "@/components/sales/order-details-card";
 import { ValidateOrderModal } from "@/components/sales/validate-order-modal";
 import { CancelOrderModal } from "@/components/sales/cancel-order-modal";
-import { PaymentModal } from "@/components/sales/payment-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { motion } from "framer-motion";
@@ -36,6 +34,7 @@ import { useLocale } from "next-intl";
 export default function CommercialDashboardPage() {
   const t = useTranslations("sales");
   const locale = useLocale();
+  const queryClient = useQueryClient();
 
   const { data: orders, isLoading } = useOrders();
   const { data: pendingOrders } = useOrdersByStatus("pending");
@@ -45,13 +44,10 @@ export default function CommercialDashboardPage() {
 
   const validateOrder = useValidateOrder();
   const cancelOrder = useCancelOrder();
-  const generateInvoice = useGenerateInvoice();
-  const createPayment = useCreatePayment();
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [validateModalOpen, setValidateModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const handleValidate = (order: Order) => {
@@ -62,15 +58,6 @@ export default function CommercialDashboardPage() {
   const handleCancel = (order: Order) => {
     setSelectedOrder(order);
     setCancelModalOpen(true);
-  };
-
-  const handleGenerateInvoice = (order: Order) => {
-    generateInvoice.mutate(order.id);
-  };
-
-  const handleRecordPayment = (order: Order) => {
-    setSelectedOrder(order);
-    setPaymentModalOpen(true);
   };
 
   const handleViewDetails = (order: Order) => {
@@ -213,8 +200,6 @@ export default function CommercialDashboardPage() {
               onViewDetails={handleViewDetails}
               onValidate={handleValidate}
               onCancel={handleCancel}
-              onGenerateInvoice={handleGenerateInvoice}
-              onRecordPayment={handleRecordPayment}
             />
           )}
         </div>
@@ -228,8 +213,6 @@ export default function CommercialDashboardPage() {
               onViewDetails={handleViewDetails}
               onValidate={handleValidate}
               onCancel={handleCancel}
-              onGenerateInvoice={handleGenerateInvoice}
-              onRecordPayment={handleRecordPayment}
             />
           )}
         </div>
@@ -256,9 +239,19 @@ export default function CommercialDashboardPage() {
           order={selectedOrder}
           open={validateModalOpen}
           onOpenChange={setValidateModalOpen}
-          onConfirm={(order) =>
-            validateOrder.mutate({ id: order.id })
-          }
+          onConfirm={(order) => {
+            validateOrder.mutate(
+              { id: order.id },
+              {
+                onSuccess: () => {
+                  // Refetch manuel pour mise à jour immédiate
+                  queryClient.invalidateQueries({ queryKey: ["orders"] });
+                  queryClient.invalidateQueries({ queryKey: ["orders", "status"] });
+                  queryClient.invalidateQueries({ queryKey: ["recent-orders"] });
+                },
+              }
+            );
+          }}
         />
 
         {/* Cancel Modal */}
@@ -266,19 +259,19 @@ export default function CommercialDashboardPage() {
           order={selectedOrder}
           open={cancelModalOpen}
           onOpenChange={setCancelModalOpen}
-          onConfirm={(order, reason) =>
-            cancelOrder.mutate({ id: order.id, data: { reason } })
-          }
-        />
-
-        {/* Payment Modal */}
-        <PaymentModal
-          order={selectedOrder}
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          onConfirm={(order, data) =>
-            createPayment.mutate({ ...data, order: order.id })
-          }
+          onConfirm={(order, reason) => {
+            cancelOrder.mutate(
+              { id: order.id, data: { reason } },
+              {
+                onSuccess: () => {
+                  // Refetch manuel pour mise à jour immédiate
+                  queryClient.invalidateQueries({ queryKey: ["orders"] });
+                  queryClient.invalidateQueries({ queryKey: ["orders", "status"] });
+                  queryClient.invalidateQueries({ queryKey: ["recent-orders"] });
+                },
+              }
+            );
+          }}
         />
       </motion.div>
     </div>

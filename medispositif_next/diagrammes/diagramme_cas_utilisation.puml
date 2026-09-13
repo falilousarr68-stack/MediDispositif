@@ -1,0 +1,91 @@
+@startuml Diagramme de Cas d'Utilisation - MediDispositif
+
+skinparam actorStyle awesome
+skinparam useCaseBackgroundColor LightYellow
+skinparam packageStyle rectangle
+
+left to right direction
+
+' === CAS D'UTILISATION COMMUNS ===
+usecase "Se connecter" as UC_LOGIN
+usecase "Creer compte" as UC_REGISTER
+usecase "Rechercher produit" as UC_SEARCH
+
+' === ACTEURS ET LEURS CAS D'UTILISATION ===
+
+' === CLIENT ===
+actor "Client" as client
+usecase "Passer commande" as UC_ORDER
+usecase "Consulter panier" as UC_CART
+usecase "Voir mes commandes" as UC_MY_ORDERS
+usecase "Effectuer paiement" as UC_PAYMENT
+
+UC_ORDER ..> UC_LOGIN : <<include>>
+UC_CART ..> UC_LOGIN : <<include>>
+UC_MY_ORDERS ..> UC_LOGIN : <<include>>
+UC_PAYMENT ..> UC_LOGIN : <<include>>
+
+client --> UC_REGISTER
+client --> UC_SEARCH
+client --> UC_ORDER
+client --> UC_CART
+client --> UC_MY_ORDERS
+client --> UC_PAYMENT
+
+' === VENDEUR ===
+actor "Vendeur" as vendeur
+usecase "Valider commande" as UC_VALIDATE
+usecase "Consulter historique ventes" as UC_HISTORY
+
+UC_VALIDATE ..> UC_LOGIN : <<include>>
+UC_HISTORY ..> UC_LOGIN : <<include>>
+
+vendeur --> UC_VALIDATE
+vendeur --> UC_HISTORY
+
+' === RESPONSABLE COMMERCIAL ===
+actor "Responsable Commercial" as resp_commercial
+usecase "Annuler commande" as UC_CANCEL
+usecase "Valider commande" as UC_VALIDATE_COMM
+usecase "Voir statistiques ventes" as UC_STATS_SALES
+
+UC_CANCEL ..> UC_LOGIN : <<include>>
+UC_VALIDATE_COMM ..> UC_LOGIN : <<include>>
+UC_STATS_SALES ..> UC_LOGIN : <<include>>
+
+resp_commercial --> UC_CANCEL
+resp_commercial --> UC_VALIDATE_COMM
+resp_commercial --> UC_STATS_SALES
+
+' === GESTIONNAIRE STOCK ===
+actor "Gestionnaire Stock" as gestionnaire_stock
+usecase "Gerer catalogues" as UC_CATALOG
+usecase "Gerer approvisionnements" as UC_SUPPLY
+usecase "Voir alertes stock" as UC_ALERTS
+
+UC_CATALOG ..> UC_LOGIN : <<include>>
+UC_SUPPLY ..> UC_LOGIN : <<include>>
+UC_ALERTS ..> UC_LOGIN : <<include>>
+
+gestionnaire_stock --> UC_CATALOG
+gestionnaire_stock --> UC_SUPPLY
+gestionnaire_stock --> UC_ALERTS
+
+' === ADMINISTRATEUR ===
+actor "Administrateur" as administrateur
+usecase "Gerer comptes utilisateurs" as UC_USERS
+usecase "Gerer parametres systeme" as UC_SETTINGS
+usecase "Attribuer roles permissions" as UC_ROLES
+usecase "Consulter statistiques rapports" as UC_REPORTS
+
+UC_USERS ..> UC_LOGIN : <<include>>
+UC_SETTINGS ..> UC_LOGIN : <<include>>
+UC_ROLES ..> UC_LOGIN : <<include>>
+UC_REPORTS ..> UC_LOGIN : <<include>>
+
+administrateur --> UC_USERS
+administrateur --> UC_SETTINGS
+administrateur --> UC_ROLES
+administrateur --> UC_REPORTS
+
+@enduml

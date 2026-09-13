@@ -1,0 +1,305 @@
+@startuml Diagramme de Classes - MediDispositif
+
+skinparam classAttributeIconSize 0
+skinparam classBackgroundColor LightBlue
+skinparam linetype ortho
+
+' === TYPES / ENTITÉS ===
+class Utilisateur {
+    + id: chaine
+    + email: chaine
+    + prenom: chaine
+    + nom: chaine
+    + telephone?: chaine
+    + role: Role
+}
+
+enum Role {
+    Administrateur
+    ResponsableCommercial
+    Vendeur
+    GestionnaireDeStock
+    Client
+}
+
+class Produit {
+    + idProduit: nombre | chaine
+    + nom: chaine
+    + description: chaine
+    + prix: nombre
+    + stock: nombre
+    + catalogue: chaine
+    + nom_catalogue?: chaine
+    + image?: chaine
+}
+
+class ArticlePanier {
+    + produit: Produit
+    + quantite: nombre
+}
+
+class Commande {
+    + id: chaine
+    + utilisateur: Utilisateur
+    + articles: ArticlePanier[]
+    + total: nombre
+    + statut: StatutCommande
+    + adresse_livraison?: chaine
+    + mode_paiement?: ModePaiement
+    + motif_annulation?: chaine
+    + date_creation: chaine
+    + date_mise_a_jour: chaine
+}
+
+enum StatutCommande {
+    en_attente
+    validee
+    annulee
+    livree
+}
+
+enum ModePaiement {
+    especes
+    carte
+    mobile_money
+    cheque
+}
+
+class Approvisionnement {
+    + id: chaine
+    + produit: Produit
+    + quantite: nombre
+    + numero_lot: chaine
+    + date_peremption: chaine
+    + date_reception: chaine
+}
+
+class Paiement {
+    + id: chaine
+    + commande: Commande
+    + montant: nombre
+    + methode: ModePaiement
+    + reference?: chaine
+    + date_creation: chaine
+}
+
+class IdentifiantsConnexion {
+    + email: chaine
+    + mot_de_passe: chaine
+}
+
+class DonneesInscription {
+    + email: chaine
+    + mot_de_passe: chaine
+    + confirmation_mot_de_passe: chaine
+    + prenom: chaine
+    + nom: chaine
+    + telephone?: chaine
+}
+
+class ReponseAuth {
+    + acces: chaine
+    + rafraichissement: chaine
+    + utilisateur: Utilisateur
+}
+
+' === HOOKS (CUSTOM HOOKS) ===
+class HookPanier {
+    + articles: ArticlePanier[]
+    + ajouterArticle(produit: Produit, quantite?: nombre): void
+    + supprimerArticle(idProduit: chaine): void
+    + modifierQuantite(idProduit: chaine, quantite: nombre): void
+    + viderPanier(): void
+    + getNombreArticles(): nombre
+    + getPrixTotal(): nombre
+    + chargerPanierServeur(): Promesse<void>
+    + verifierAuthentification(): void
+    + forcerMiseAJour(): void
+}
+
+class HookProduits {
+    + utiliserProduits(): ResultatRequete<Produit[]>
+    + utiliserProduit(id: chaine): ResultatRequete<Produit>
+    + utiliserCategoriesProduits(): ResultatRequete<chaine[]>
+    + rechercherProduits(requete: chaine): ResultatRequete<Produit[]>
+    + filtrerProduits(filtres: OptionsFiltre): ResultatRequete<Produit[]>
+}
+
+class HookStock {
+    + utiliserProduitsStock(): ResultatRequete<Produit[]>
+    + creerProduit(): ResultatMutation
+    + modifierProduit(): ResultatMutation
+    + supprimerProduit(): ResultatMutation
+    + utiliserApprovisionnements(): ResultatRequete<Approvisionnement[]>
+    + creerApprovisionnement(): ResultatMutation
+    + supprimerApprovisionnement(): ResultatMutation
+    + utiliserProduitsStockFaible(seuil: nombre): ResultatRequete<Produit[]>
+    + utiliserProduitsPerimes(): ResultatRequete<Approvisionnement[]>
+    + utiliserStatistiquesStock(): ResultatRequete
+}
+
+class HookVentes {
+    + utiliserCommandes(): ResultatRequete<Commande[]>
+    + utiliserCommande(id: chaine): ResultatRequete<Commande>
+    + validerCommande(): ResultatMutation
+    + annulerCommande(): ResultatMutation
+    + utiliserPaiements(): ResultatRequete<Paiement[]>
+    + utiliserPaiementsCommande(idCommande: chaine): ResultatRequete<Paiement[]>
+    + creerPaiement(): ResultatMutation
+    + genererFacture(): ResultatMutation
+    + utiliserStatistiquesVentes(periode?: Periode): ResultatRequete
+    + utiliserCommandesRecentes(limite: nombre): ResultatRequete<Commande[]>
+    + utiliserCommandesParStatut(statut: StatutCommande): ResultatRequete<Commande[]>
+}
+
+class HookAdministration {
+    + utiliserUtilisateurs(): ResultatRequete<Utilisateur[]>
+    + creerUtilisateur(): ResultatMutation
+    + supprimerUtilisateur(): ResultatMutation
+    + modifierUtilisateur(): ResultatMutation
+    + utiliserCommandes(): ResultatRequete<Commande[]>
+    + creerCommande(): ResultatMutation
+    + validerCommande(): ResultatMutation
+    + annulerCommande(): ResultatMutation
+    + utiliserPaiements(): ResultatRequete<Paiement[]>
+    + creerPaiement(): ResultatMutation
+    + utiliserFactures(): ResultatRequete
+    + creerFacture(): ResultatMutation
+    + utiliserRapports(): ResultatRequete
+    + creerRapport(): ResultatMutation
+}
+
+' === SERVICES ===
+class ServiceAxios {
+    + urlBase: chaine
+    + get(url: chaine): Promesse<Reponse>
+    + post(url: chaine, donnees: any): Promesse<Reponse>
+    + put(url: chaine, donnees: any): Promesse<Reponse>
+    + delete(url: chaine): Promesse<Reponse>
+    + intercepteurs: Intercepteurs
+}
+
+class ServiceCommandes {
+    + normaliserCommande(donnees: any): Commande
+    + normaliserCommandes(donnees: any): Commande[]
+}
+
+' === COMPOSANTS UI ===
+class PageAccueil {
+    + fonctionnalites: Fonctionnalite[]
+    + services: Service[]
+    + produits: chaine[]
+}
+
+class PageBoutique {
+    + requeteRecherche: chaine
+    + categorieSelectionnee: chaine
+    + intervallePrix: [nombre, nombre]
+    + afficherFiltres: booleen
+}
+
+class GrilleProduits {
+    + produits: Produit[]
+    + chargement: booleen
+}
+
+class FiltresProduits {
+    + requeteRecherche: chaine
+    + categorieSelectionnee: chaine
+    + categories: chaine[]
+    + intervallePrix: [nombre, nombre]
+    + prixMaximum: nombre
+}
+
+class CarteProduit {
+    + produit: Produit
+    + onAjouterAuPanier(produit: Produit): void
+}
+
+class PagePanier {
+    + articles: ArticlePanier[]
+    + nombreTotalArticles: nombre
+    + prixTotal: nombre
+}
+
+class PageDashboardAdmin {
+    + sectionActive: SectionAdmin
+    + utilisateurs: Utilisateur[]
+    + commandes: Commande[]
+    + paiements: Paiement[]
+    + factures: Facture[]
+    + rapports: Rapport[]
+}
+
+class TableauUtilisateurs {
+    + utilisateurs: Utilisateur[]
+    + onSupprimer(idUtilisateur: chaine): void
+}
+
+class DialogueCreationUtilisateur {
+    + ouvert: booleen
+    + onSubmit(donneesUtilisateur: any): void
+}
+
+class TableauCommandes {
+    + commandes: Commande[]
+    + onValider(idCommande: chaine): void
+    + onAnnuler(idCommande: chaine, motif: chaine): void
+}
+
+class TableauStock {
+    + produits: Produit[]
+    + onModifier(produit: Produit): void
+    + onSupprimer(idProduit: chaine): void
+}
+
+class TableauApprovisionnements {
+    + approvisionnements: Approvisionnement[]
+    + onSupprimer(idApprovisionnement: chaine): void
+}
+
+' === RELATIONS ===
+Utilisateur "1" -- "*" Commande : cree >
+Commande "1" -- "*" ArticlePanier : contient >
+ArticlePanier "1" -- "1" Produit : reference >
+Produit "1" -- "*" Approvisionnement : recoit >
+Commande "1" -- "*" Paiement : a >
+
+HookPanier ..> ArticlePanier : utilise
+HookPanier ..> Produit : utilise
+HookProduits ..> Produit : utilise
+HookStock ..> Produit : utilise
+HookStock ..> Approvisionnement : utilise
+HookVentes ..> Commande : utilise
+HookVentes ..> Paiement : utilise
+HookAdministration ..> Utilisateur : utilise
+HookAdministration ..> Commande : utilise
+HookAdministration ..> Paiement : utilise
+
+HookProduits ..> ServiceAxios : utilise
+HookStock ..> ServiceAxios : utilise
+HookVentes ..> ServiceAxios : utilise
+HookAdministration ..> ServiceAxios : utilise
+HookPanier ..> ServiceAxios : utilise
+
+PageAccueil ..> CarteProduit : utilise
+PageBoutique ..> GrilleProduits : utilise
+PageBoutique ..> FiltresProduits : utilise
+GrilleProduits ..> CarteProduit : utilise
+PagePanier ..> HookPanier : utilise
+PageDashboardAdmin ..> TableauUtilisateurs : utilise
+PageDashboardAdmin ..> DialogueCreationUtilisateur : utilise
+PageDashboardAdmin ..> TableauCommandes : utilise
+PageDashboardAdmin ..> HookAdministration : utilise
+
+CarteProduit ..> HookPanier : utilise
+TableauUtilisateurs ..> HookAdministration : utilise
+DialogueCreationUtilisateur ..> HookAdministration : utilise
+TableauCommandes ..> HookVentes : utilise
+TableauStock ..> HookStock : utilise
+TableauApprovisionnements ..> HookStock : utilise
+
+ServiceCommandes ..> Commande : transforme
+ServiceCommandes ..> Paiement : transforme
+
+@enduml

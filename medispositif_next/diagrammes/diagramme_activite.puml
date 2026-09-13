@@ -1,0 +1,267 @@
+@startuml Diagramme d'Activite - MediDispositif
+
+skinparam activityBackgroundColor LightBlue
+skinparam linetype ortho
+
+' === ACTIVITÉ 1: PROCESSUS D'ACHAT ===
+partition "Processus d'Achat Client" {
+    start
+    :Client visite la boutique;
+    :Consulte le catalogue;
+    
+    if (Recherche produit?) then (Oui)
+        :Saisit criteres de recherche;
+        :Filtre par categorie/prix;
+    endif
+    
+    :Voir details produit;
+    
+    if (Ajouter au panier?) then (Oui)
+        :Ajoute produit au panier;
+        note right
+            Verifie stock disponible
+            Met a jour localStorage ou API
+        end note
+    else (Non)
+        :Continue navigation;
+    endif
+    
+    :Consulte panier;
+    
+    if (Panier vide?) then (Oui)
+        :Retour boutique;
+    else (Non)
+        :Modifie quantites si besoin;
+        :Supprime articles si besoin;
+        
+        if (Pret commander?) then (Oui)
+            :Clique sur commander;
+            
+            if (Connecte?) then (Oui)
+                :Confirme commande;
+                :Commande creee;
+                :Redirection vers succes;
+            else (Non)
+                :Redirection login;
+                if (Connexion reussie?) then (Oui)
+                    :Retour panier;
+                else (Non)
+                    :Message erreur;
+                endif
+            endif
+        else (Non)
+            :Continue navigation;
+        endif
+    endif
+    
+    stop
+}
+
+' === ACTIVITÉ 2: PROCESSUS VALIDATION COMMANDE (VENDEUR) ===
+partition "Processus Validation Commande Vendeur" {
+    start
+    :Vendeur accede dashboard;
+    :Consulte liste commandes;
+    
+    if (Commande a valider?) then (Oui)
+        :Voir details commande;
+        :Verifie disponibilite stock;
+        
+        if (Stock suffisant?) then (Oui)
+            :Clique sur valider;
+            :API appelle endpoint validation;
+            :Statut passe a "validee";
+            :Stock decremente;
+            :Notification client;
+        else (Non)
+            :Message stock insuffisant;
+            :Contacte fournisseur;
+        endif
+    else (Non)
+        :Consulte autres commandes;
+    endif
+    
+    stop
+}
+
+' === ACTIVITÉ 3: PROCESSUS VALIDATION COMMANDE (RESPONSABLE COMMERCIAL) ===
+partition "Processus Validation Commande Responsable Commercial" {
+    start
+    :Responsable Commercial accede dashboard;
+    :Consulte liste commandes;
+    
+    if (Commande a valider?) then (Oui)
+        :Voir details commande;
+        :Verifie disponibilite stock;
+        
+        if (Stock suffisant?) then (Oui)
+            :Clique sur valider;
+            :API appelle endpoint validation;
+            :Statut passe a "validee";
+            :Stock decremente;
+            :Notification client;
+        else (Non)
+            :Message stock insuffisant;
+            :Contacte fournisseur;
+        endif
+    else (Non)
+        :Consulte autres commandes;
+    endif
+    
+    if (Commande a annuler?) then (Oui)
+        :Saisit motif annulation;
+        :API appelle endpoint annulation;
+        :Statut passe a "annulee";
+        :Stock restaure si valide;
+        :Notification client;
+    endif
+    
+    stop
+}
+
+' === ACTIVITÉ 3: PROCESSUS GESTION STOCK ===
+partition "Processus Gestion Stock" {
+    start
+    :Gestionnaire Stock accede dashboard;
+    :Consulte liste produits;
+    
+    if (Creer nouveau produit?) then (Oui)
+        :Remplit formulaire produit;
+        :Upload image si besoin;
+        :API appelle endpoint creation;
+        
+        if (Creation reussie?) then (Oui)
+            :Produit ajoute catalogue;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+            :Corrige formulaire;
+        endif
+    endif
+    
+    if (Modifier produit?) then (Oui)
+        :Selectionne produit;
+        :Modifie informations;
+        :API appelle endpoint modification;
+        
+        if (Modification reussie?) then (Oui)
+            :Produit mis a jour;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+        endif
+    endif
+    
+    if (Enregistrer approvisionnement?) then (Oui)
+        :Selectionne produit;
+        :Saisit quantite recue;
+        :Saisit numero lot;
+        :Saisit date peremption;
+        :Saisit prix achat;
+        :API appelle endpoint approvisionnement;
+        
+        if (Enregistrement reussi?) then (Oui)
+            :Stock incremente;
+            :Alerte si peremption proche;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+        endif
+    endif
+    
+    :Consulte alertes stock bas;
+    if (Stock critique?) then (Oui)
+        :Liste produits sous seuil;
+        :Planifie reapprovisionnement;
+    endif
+    
+    :Consulte produits perimes;
+    if (Produits perimes?) then (Oui)
+        :Liste produits a retirer;
+        :Genere rapport peremption;
+    endif
+    
+    stop
+}
+
+' === ACTIVITÉ 4: PROCESSUS GESTION UTILISATEURS (ADMIN) ===
+partition "Processus Gestion Utilisateurs" {
+    start
+    :Administrateur accede dashboard admin;
+    :Consulte liste utilisateurs;
+    
+    if (Creer utilisateur?) then (Oui)
+        :Remplit formulaire utilisateur;
+        :Selectionne role;
+        :API appelle endpoint creation;
+        
+        if (Creation reussie?) then (Oui)
+            :Utilisateur cree;
+            :Email notification envoye;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+            :Verifie donnees formulaire;
+        endif
+    endif
+    
+    if (Modifier utilisateur?) then (Oui)
+        :Selectionne utilisateur;
+        :Modifie informations;
+        :Peut changer role;
+        :API appelle endpoint modification;
+        
+        if (Modification reussie?) then (Oui)
+            :Utilisateur mis a jour;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+        endif
+    endif
+    
+    if (Supprimer utilisateur?) then (Oui)
+        :Selectionne utilisateur;
+        :Confirme suppression;
+        :API appelle endpoint suppression;
+        
+        if (Suppression reussie?) then (Oui)
+            :Utilisateur supprime;
+            :Message succes;
+        else (Non)
+            :Message erreur;
+        endif
+    endif
+    
+    stop
+}
+
+' === ACTIVITÉ 5: PROCESSUS GÉNÉRATION RAPPORTS ===
+partition "Processus Generation Rapports" {
+    start
+    :Admin/Commercial accede rapports;
+    :Selectionne type rapport;
+    
+    if (Rapport ventes?) then (Oui)
+        :Selectionne periode;
+        :Selectionne filtres (categorie, client);
+        :API appelle endpoint statistiques;
+        :Genere rapport HTML/PDF;
+    endif
+    
+    if (Rapport stock?) then (Oui)
+        :Selectionne periode;
+        :API appelle endpoint statistiques stock;
+        :Genere rapport avec alertes;
+    endif
+    
+    if (Export donnees?) then (Oui)
+        :Selectionne format (CSV, Excel);
+        :API genere fichier export;
+        :Telechargement fichier;
+    endif
+    
+    :Sauvegarde rapport si besoin;
+    stop
+}
+
+@enduml

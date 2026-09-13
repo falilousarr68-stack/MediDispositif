@@ -60,7 +60,10 @@ export function useValidateOrder() {
       return response.data;
     },
     onSuccess: () => {
+      // Invalider toutes les requêtes liées aux commandes
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "status"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-orders"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["payments"] });
       toast.success("Commande validée", {
@@ -91,7 +94,10 @@ export function useCancelOrder() {
       return response.data;
     },
     onSuccess: () => {
+      // Invalider toutes les requêtes liées aux commandes
       queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["orders", "status"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-orders"] });
       toast.success("Commande annulée", {
         description: "✅ La commande a été annulée avec succès",
       });
