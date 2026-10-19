@@ -65,6 +65,13 @@ class Utilisateur(AbstractUser):
         help_text='Adresse du client (optionnel pour les autres rôles).',
     )
 
+    photo_profil = models.ImageField(
+        upload_to='profils/',
+        blank=True,
+        null=True,
+        verbose_name='Photo de profil',
+    )
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['nom', 'prenom']
 

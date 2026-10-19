@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import ParametreSysteme, Rapport, TypeRapport
+from .models import ParametreSysteme, Rapport, TypeRapport,JournalAudit
 
 
 class ParametreSystemeSerializer(serializers.ModelSerializer):
@@ -130,3 +130,57 @@ class RapportCreateSerializer(serializers.ModelSerializer):
             )
 
         return data
+
+
+class JournalAuditSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour consulter le journal d'audit.
+    """
+
+    idAudit = serializers.IntegerField(
+        source='pk',
+        read_only=True
+    )
+
+    utilisateur_info = serializers.SerializerMethodField()
+
+    action_display = serializers.CharField(
+        source='get_action_display',
+        read_only=True
+    )
+
+    class Meta:
+        model = JournalAudit
+        fields = [
+            'idAudit',
+            'utilisateur_info',
+            'module',
+            'action',
+            'action_display',
+            'description',
+            'date_action',
+            'reference',
+        ]
+
+        read_only_fields = [
+            'idAudit',
+            'utilisateur_info',
+            'action_display',
+            'module',
+            'action',
+            'description',
+            'date_action',
+            'reference',
+        ]
+
+    def get_utilisateur_info(self, obj):
+        if obj.utilisateur:
+            return {
+                'id': obj.utilisateur.idUser,
+                'nom': obj.utilisateur.nom,
+                'prenom': obj.utilisateur.prenom,
+                'email': obj.utilisateur.email,
+                'role': obj.utilisateur.role,
+            }
+
+        return None

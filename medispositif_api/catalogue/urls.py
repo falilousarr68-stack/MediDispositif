@@ -6,6 +6,7 @@ from .views import (
     CatalogueViewSet,
     DetailsApprovisionnementViewSet,
     ProduitMedicalViewSet,
+    MouvementStockViewSet,
 )
 
 router = DefaultRouter()
@@ -13,6 +14,7 @@ router.register('catalogues', CatalogueViewSet, basename='catalogue')
 router.register('produits', ProduitMedicalViewSet, basename='produit')
 router.register('approvisionnements', ApprovisionnementViewSet, basename='approvisionnement')
 router.register('details-approvisionnement', DetailsApprovisionnementViewSet, basename='detail-approvisionnement')
+router.register('mouvements-stock',MouvementStockViewSet,basename='mouvement-stock')
 
 app_name = 'catalogue'
 

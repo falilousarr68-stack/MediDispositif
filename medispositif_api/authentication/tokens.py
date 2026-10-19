@@ -1,5 +1,6 @@
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from systeme.audit import enregistrer_audit
+from systeme.models import TypeActionAudit
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
@@ -11,6 +12,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        enregistrer_audit(
+    utilisateur=self.user,
+    module="Authentification",
+    action=TypeActionAudit.CONNEXION,
+    description=(
+        f"Connexion de l'utilisateur "
+        f"{self.user.prenom} {self.user.nom}."
+    ),
+    reference=f"Utilisateur #{self.user.pk}",
+)
 
         utilisateur = self.user
         data['utilisateur'] = {

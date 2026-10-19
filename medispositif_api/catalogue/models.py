@@ -31,14 +31,34 @@ class ProduitMedical(models.Model):
         related_name='produits',
         verbose_name='Catalogue',
     )
-    nom = models.CharField(max_length=200, verbose_name='Nom du produit')
-    description = models.TextField(blank=True, verbose_name='Description')
+
+    nom = models.CharField(
+        max_length=200,
+        verbose_name='Nom du produit'
+    )
+
+    description = models.TextField(
+        blank=True,
+        verbose_name='Description'
+    )
+
     prix = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         verbose_name='Prix de vente',
     )
-    stock = models.PositiveIntegerField(default=0, verbose_name='Stock disponible')
+
+    stock = models.PositiveIntegerField(
+        default=0,
+        verbose_name='Stock disponible'
+    )
+
+    image = models.ImageField(
+        upload_to='produits/',
+        blank=True,
+        null=True,
+        verbose_name='Photo du produit'
+    )
 
     class Meta:
         verbose_name = 'Produit médical'
@@ -139,8 +159,26 @@ class DetailsApprovisionnement(models.Model):
         super().save(*args, **kwargs)
 
         if difference != 0:
-            self.produit.stock = max(0, self.produit.stock + difference)
-            self.produit.save(update_fields=['stock'])
+
+            stock_avant = self.produit.stock
+
+        self.produit.stock = max(
+        0,
+        self.produit.stock + difference
+    )
+
+        self.produit.save(
+        update_fields=['stock']
+    )
+
+        MouvementStock.objects.create(
+            produit=self.produit,
+        type_mouvement=TypeMouvementStock.APPROVISIONNEMENT,
+        quantite=abs(difference),
+        stock_avant=stock_avant,
+        stock_apres=self.produit.stock,
+        reference=f"Approvisionnement #{self.approvisionnement.pk}",
+    )
 
         self.approvisionnement.recalculer_quantite_totale()
 
@@ -154,3 +192,66 @@ class DetailsApprovisionnement(models.Model):
         produit.stock = max(0, produit.stock - quantite)
         produit.save(update_fields=['stock'])
         approvisionnement.recalculer_quantite_totale()
+
+class TypeMouvementStock(models.TextChoices):
+    APPROVISIONNEMENT = 'Approvisionnement', 'Approvisionnement'
+    VENTE = 'Vente', 'Vente'
+    ANNULATION = 'Annulation', 'Annulation'
+
+
+class MouvementStock(models.Model):
+    """
+    Historique de toutes les entrées et sorties de stock.
+    """
+
+    produit = models.ForeignKey(
+        ProduitMedical,
+        on_delete=models.PROTECT,
+        related_name='mouvements_stock',
+        verbose_name='Produit médical',
+    )
+
+    type_mouvement = models.CharField(
+        max_length=30,
+        choices=TypeMouvementStock.choices,
+        verbose_name='Type de mouvement',
+    )
+
+    quantite = models.PositiveIntegerField(
+        verbose_name='Quantité',
+    )
+
+    stock_avant = models.PositiveIntegerField(
+        verbose_name='Stock avant',
+    )
+
+    stock_apres = models.PositiveIntegerField(
+        verbose_name='Stock après',
+    )
+
+    date_mouvement = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Date du mouvement',
+    )
+
+    reference = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Référence',
+    )
+
+    class Meta:
+        verbose_name = 'Mouvement de stock'
+        verbose_name_plural = 'Mouvements de stock'
+        ordering = ['-date_mouvement']
+
+    def __str__(self):
+        return (
+            f'{self.produit.nom} - '
+            f'{self.get_type_mouvement_display()} - '
+            f'{self.quantite} unités'
+        )
+
+    @property
+    def idMouvement(self):
+        return self.pk

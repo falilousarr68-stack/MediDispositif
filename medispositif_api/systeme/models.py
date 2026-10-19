@@ -114,3 +114,85 @@ class Rapport(models.Model):
     def idRapport(self):
         """Alias conforme au diagramme UML pour l'identifiant de rapport."""
         return self.pk
+
+# ==========================================================
+# JOURNAL D'AUDIT
+# ==========================================================
+
+class TypeActionAudit(models.TextChoices):
+    CREATION = 'Creation', 'Création'
+    MODIFICATION = 'Modification', 'Modification'
+    SUPPRESSION = 'Suppression', 'Suppression'
+    VALIDATION = 'Validation', 'Validation'
+    ANNULATION = 'Annulation', 'Annulation'
+    PAIEMENT = 'Paiement', 'Paiement'
+    CONNEXION = 'Connexion', 'Connexion'
+    DECONNEXION = 'Deconnexion', 'Déconnexion'
+    GENERATION = 'Generation', 'Génération'
+
+
+class JournalAudit(models.Model):
+    """
+    Journal de traçabilité des actions effectuées
+    par les utilisateurs sur l'application.
+    """
+
+    utilisateur = models.ForeignKey(
+        'authentication.Utilisateur',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='actions_audit',
+        verbose_name='Utilisateur',
+    )
+
+    module = models.CharField(
+        max_length=100,
+        verbose_name='Module',
+    )
+
+    action = models.CharField(
+        max_length=30,
+        choices=TypeActionAudit.choices,
+        verbose_name='Action',
+    )
+
+    description = models.TextField(
+        verbose_name='Description',
+    )
+
+    date_action = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date de l'action",
+    )
+
+    reference = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Référence',
+    )
+
+    class Meta:
+        verbose_name = "Journal d'audit"
+        verbose_name_plural = "Journal d'audit"
+        ordering = ['-date_action']
+
+    def __str__(self):
+        utilisateur = self.utilisateur
+
+        if utilisateur:
+            nom_utilisateur = (
+                f"{utilisateur.prenom} {utilisateur.nom}"
+            )
+        else:
+            nom_utilisateur = "Utilisateur supprimé"
+
+        return (
+            f"{nom_utilisateur} - "
+            f"{self.get_action_display()} - "
+            f"{self.module}"
+        )
+
+    @property
+    def idAudit(self):
+        return self.pk
